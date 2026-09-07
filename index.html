@@ -630,6 +630,8 @@
         mapPicked: 'ปักหมุดตำแหน่งแล้ว ✓',
         mapLocateError: 'ไม่สามารถระบุตำแหน่งได้ กรุณาลากหมุดบนแผนที่แทน',
         mapAddressLoading: 'กำลังค้นหาที่อยู่จากพิกัด...',
+        mapGeocoding: 'กำลังค้นหาตำแหน่งจากที่อยู่...',
+        mapGeocodeNotFound: 'ไม่พบตำแหน่งจากที่อยู่นี้ กรุณาปักหมุดเอง',
         kitchenInfo: 'ข้อมูลเครื่องครัว', kitchenInfoPh: 'ยี่ห้อ / รุ่น / อาการเบื้องต้น',
         phone: 'เบอร์ติดต่อ', email: 'อีเมล (สำหรับส่งใบยืนยันการจอง)',
         image: 'รูปภาพ', fileDropText: 'คลิกเพื่อเลือกรูปภาพ หรือ ลากไฟล์มาวางที่นี่ (เลือกได้หลายรูป)',
@@ -678,6 +680,8 @@
         mapPicked: 'Location pinned ✓',
         mapLocateError: 'Could not detect your location. Please drag the pin on the map instead.',
         mapAddressLoading: 'Looking up address...',
+        mapGeocoding: 'Looking up location from address...',
+        mapGeocodeNotFound: 'Could not find this address. Please pin the location manually.',
         kitchenInfo: 'Kitchen Equipment Info', kitchenInfoPh: 'Brand / model / issue description',
         phone: 'Phone Number', email: 'Email (for booking confirmation)',
         image: 'Photo', fileDropText: 'Click to select images, or drag & drop here (multiple allowed)',
@@ -726,6 +730,8 @@
         mapPicked: '已标记位置 ✓',
         mapLocateError: '无法获取您的位置，请在地图上拖动图钉。',
         mapAddressLoading: '正在查询地址...',
+        mapGeocoding: '正在根据地址查询位置...',
+        mapGeocodeNotFound: '找不到该地址的位置，请手动标记。',
         kitchenInfo: '厨房设备信息', kitchenInfoPh: '品牌 / 型号 / 故障说明',
         phone: '联系电话', email: '电子邮箱（用于接收预约确认信）',
         image: '照片', fileDropText: '点击选择图片，或将文件拖放到此处（可选择多张）',
@@ -953,6 +959,7 @@
     const mapLocateBtn = document.getElementById('mapLocateBtn');
     const mapLocateBtnText = document.getElementById('mapLocateBtnText');
     const mapCoordsHint = document.getElementById('mapCoordsHint');
+    const shopAddressEl = document.getElementById('shopAddress');
     const reviewOverlay = document.getElementById('reviewOverlay');
     const reviewCardBody = document.getElementById('reviewCardBody');
     const reviewEditBtn = document.getElementById('reviewEditBtn');
@@ -985,7 +992,7 @@
     });
 
     // ===== แผนที่ปักหมุดตำแหน่งร้าน/จุดที่ต้องการให้เข้าบริการ (Leaflet + OpenStreetMap) =====
-    // ค่าเริ่มต้น: ศูนย์กลางกรุงเทพฯ - ยังไม่ถือว่าลูกค้า "ปักหมุด" จนกว่าจะแตะแผนที่ / ลากหมุด / กดใช้ตำแหน่งปัจจุบัน
+    // ค่าเริ่มต้น: ศูนย์กลางกรุงเทพฯ - ยังไม่ถือว่าลูกค้า "ปักหมุด" จนกว่าจะแตะแผนที่ / ลากหมุด / กดใช้ตำแหน่งปัจจุบัน / พิมพ์ที่อยู่แล้วค้นเจอ
     const DEFAULT_MAP_CENTER = [13.7563, 100.5018];
     let selectedLat = null;
     let selectedLng = null;
@@ -993,6 +1000,9 @@
     // ===== ใช้สำหรับ debounce + ยกเลิกผลลัพธ์เก่าของการค้นหาที่อยู่จากพิกัด (reverse geocoding) =====
     let reverseGeocodeTimer = null;
     let reverseGeocodeToken = 0;
+    // ===== ใช้สำหรับ debounce + ยกเลิกผลลัพธ์เก่าของการค้นหาพิกัดจากที่อยู่ที่พิมพ์ (forward geocoding) =====
+    let forwardGeocodeTimer = null;
+    let forwardGeocodeToken = 0;
 
     const locationMap = L.map('locationMap', { attributionControl: true }).setView(DEFAULT_MAP_CENTER, 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1002,7 +1012,9 @@
 
     const locationMarker = L.marker(DEFAULT_MAP_CENTER, { draggable: true }).addTo(locationMap);
 
-    function setPickedLocation(lat, lng, recenter) {
+    // ===== skipReverseGeocode: true เมื่อพิกัดนี้มาจากการพิมพ์ที่อยู่เอง (forward geocode) =====
+    // กันไม่ให้ยิง reverse geocode ย้อนกลับไปเขียนทับข้อความที่ลูกค้าเพิ่งพิมพ์เอง
+    function setPickedLocation(lat, lng, recenter, skipReverseGeocode) {
       selectedLat = lat;
       selectedLng = lng;
       hasPickedLocation = true;
@@ -1010,7 +1022,9 @@
       if (recenter) locationMap.setView([lat, lng], 16);
       updateMapCoordsHint();
       scheduleDraftSave();
-      scheduleReverseGeocode_(lat, lng);
+      if (!skipReverseGeocode) {
+        scheduleReverseGeocode_(lat, lng);
+      }
     }
 
     /**
@@ -1043,7 +1057,7 @@
           updateMapCoordsHint();
           const address = data && data.display_name;
           if (address) {
-            document.getElementById('shopAddress').value = address;
+            shopAddressEl.value = address;
             scheduleDraftSave();
           }
         })
@@ -1052,6 +1066,65 @@
           updateMapCoordsHint(); // ค้นหาที่อยู่ไม่สำเร็จ - เงียบๆ กลับไปโชว์พิกัดตามเดิม ลูกค้ากรอกที่อยู่เองได้
         });
     }
+
+    /**
+     * เว้นจังหวะก่อนยิงคำขอค้นหาพิกัดจากที่อยู่ที่พิมพ์ (forward geocoding)
+     * ยิงหลังจากลูกค้าหยุดพิมพ์ไปสักครู่ เพื่อไม่ให้ยิงคำขอทุกตัวอักษรที่พิมพ์
+     */
+    function scheduleForwardGeocode_() {
+      if (isApplyingDraft) return; // ไม่ยิงคำขอตอนกำลังกู้คืนร่างข้อมูล (ค่าจะถูกเติมตรงๆ อยู่แล้ว)
+      clearTimeout(forwardGeocodeTimer);
+      const address = shopAddressEl.value.trim();
+      if (!address) return;
+      forwardGeocodeTimer = setTimeout(function () {
+        geocodeAddressToPin_(address);
+      }, 900);
+    }
+
+    /**
+     * เรียก Nominatim (OpenStreetMap) ค้นหาพิกัดจากข้อความที่อยู่ แล้วย้ายหมุดบนแผนที่ไปตำแหน่งนั้นให้อัตโนมัติ
+     * ใช้ token กันผลลัพธ์เก่าเขียนทับค่าล่าสุด ถ้าผู้ใช้พิมพ์ที่อยู่ใหม่ระหว่างรอผลลัพธ์เดิม
+     */
+    function geocodeAddressToPin_(address) {
+      const t = I18N[currentLang];
+      const myToken = ++forwardGeocodeToken;
+      const langCode = currentLang === 'TH' ? 'th' : (currentLang === 'ZH' ? 'zh' : 'en');
+      mapCoordsHint.textContent = t.mapGeocoding;
+      mapCoordsHint.classList.remove('picked');
+      const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=0' +
+        '&accept-language=' + langCode + '&countrycodes=th&q=' + encodeURIComponent(address);
+      fetch(url, { headers: { 'Accept': 'application/json' } })
+        .then(function (res) { return res.json(); })
+        .then(function (results) {
+          if (myToken !== forwardGeocodeToken) return; // มีการพิมพ์ที่อยู่ใหม่ระหว่างรอ ไม่ใช้ผลลัพธ์นี้แล้ว
+          if (results && results.length > 0) {
+            const lat = parseFloat(results[0].lat);
+            const lng = parseFloat(results[0].lon);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              // recenter=true เพื่อเลื่อนแผนที่ไปหาตำแหน่งที่เจอ, skipReverseGeocode=true กันเขียนทับข้อความที่พิมพ์เอง
+              setPickedLocation(lat, lng, true, true);
+              return;
+            }
+          }
+          // ไม่พบผลลัพธ์: แจ้งเตือนเบาๆ แล้วกลับไปโชว์คำแนะนำปกติ ลูกค้ายังปักหมุดเองได้เสมอ
+          mapCoordsHint.textContent = t.mapGeocodeNotFound;
+          setTimeout(function () {
+            if (myToken === forwardGeocodeToken) updateMapCoordsHint();
+          }, 2500);
+        })
+        .catch(function () {
+          if (myToken !== forwardGeocodeToken) return;
+          updateMapCoordsHint();
+        });
+    }
+
+    // พิมพ์ที่อยู่ -> ค้นหาพิกัดอัตโนมัติ (debounced ระหว่างพิมพ์ + ยิงทันทีอีกครั้งตอนออกจากช่อง)
+    shopAddressEl.addEventListener('input', scheduleForwardGeocode_);
+    shopAddressEl.addEventListener('blur', function () {
+      clearTimeout(forwardGeocodeTimer);
+      const address = shopAddressEl.value.trim();
+      if (address) geocodeAddressToPin_(address);
+    });
 
     function updateMapCoordsHint() {
       const t = I18N[currentLang];
@@ -1372,7 +1445,7 @@
       document.getElementById('lblContactName').textContent = t.contactName;
       document.getElementById('contactName').placeholder = t.contactNamePh;
       document.getElementById('lblShopAddress').textContent = t.shopAddress;
-      document.getElementById('shopAddress').placeholder = t.shopAddressPh;
+      shopAddressEl.placeholder = t.shopAddressPh;
       document.getElementById('lblMap').textContent = t.mapLabel;
       mapLocateBtnText.textContent = t.mapLocateBtn;
       updateMapCoordsHint();
@@ -1579,7 +1652,7 @@
         serviceTypesLabeled: serviceTypesLabeled, // ===== หัวข้อบริการ + รหัสแผนก สำหรับ Sheet/Email =====
         departmentCodes: departmentCodes,          // ===== รหัสแผนกล้วนๆ เช่น ["OP","PJ"] =====
         contactName: document.getElementById('contactName').value.trim(),
-        shopAddress: document.getElementById('shopAddress').value.trim(),
+        shopAddress: shopAddressEl.value.trim(),
         // ===== พิกัดที่ลูกค้าปักหมุดไว้บนแผนที่ (ถ้ามี) - ใช้แปลงเป็นลิงก์ Google Maps ฝั่งหลังบ้าน =====
         mapLat: hasPickedLocation && selectedLat !== null ? selectedLat.toFixed(6) : '',
         mapLng: hasPickedLocation && selectedLng !== null ? selectedLng.toFixed(6) : '',
@@ -2110,7 +2183,7 @@
       isApplyingDraft = true;
       try {
         if (data.contactName) document.getElementById('contactName').value = data.contactName;
-        if (data.shopAddress) document.getElementById('shopAddress').value = data.shopAddress;
+        if (data.shopAddress) shopAddressEl.value = data.shopAddress;
         if (data.kitchenInfo) document.getElementById('kitchenInfo').value = data.kitchenInfo;
         if (data.phone) document.getElementById('phone').value = data.phone;
         if (data.customerEmail) document.getElementById('customerEmail').value = data.customerEmail;
@@ -2157,7 +2230,7 @@
         if (data.mapLat && data.mapLng) {
           const lat = parseFloat(data.mapLat);
           const lng = parseFloat(data.mapLng);
-          if (!isNaN(lat) && !isNaN(lng)) setPickedLocation(lat, lng, true);
+          if (!isNaN(lat) && !isNaN(lng)) setPickedLocation(lat, lng, true, true);
         }
 
         // วันที่/เวลานัด: คืนค่าได้เฉพาะวันที่ยังไม่ผ่านไป (กันกรณีร่างเก่าเลือกวันที่ล่วงเลยมาแล้ว)
