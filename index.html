@@ -299,6 +299,96 @@
       vertical-align:middle; margin-right:8px;
     }
     @keyframes spin{ to{ transform:rotate(360deg); } }
+
+    /* ===== หน้าสำเร็จหลังจองเรียบร้อย (success step) แสดงรหัสการจอง + ปุ่มคัดลอก ===== */
+    .success-overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+      z-index:1100; display:none; align-items:center; justify-content:center; padding:20px;
+    }
+    .success-overlay.active{ display:flex; }
+    .success-card{
+      background:linear-gradient(160deg, rgba(26,26,26,0.97), rgba(13,13,13,0.98));
+      border:1px solid var(--border); border-radius:20px; padding:32px 26px;
+      max-width:420px; width:100%; text-align:center;
+      box-shadow:0 25px 70px rgba(0,0,0,0.65);
+    }
+    .success-icon{
+      width:64px; height:64px; border-radius:50%; margin:0 auto 18px auto;
+      background:rgba(46,204,113,0.14); border:1px solid rgba(46,204,113,0.4);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .success-icon svg{ width:32px; height:32px; }
+    .success-title{ font-size:19px; font-weight:700; color:#fff; margin-bottom:6px; }
+    .success-subtitle{ font-size:13.5px; color:var(--gray); margin-bottom:20px; line-height:1.5; }
+    .success-code-label{ font-size:12px; color:var(--gray); letter-spacing:0.3px; margin-bottom:8px; }
+    .success-code-box{
+      display:flex; align-items:center; gap:10px; background:#141414; border:1px solid var(--border);
+      border-radius:12px; padding:14px 16px; margin-bottom:22px;
+    }
+    .success-code-text{
+      flex:1; font-size:20px; font-weight:700; letter-spacing:1.5px; color:#ff8a93;
+      word-break:break-all; text-align:left;
+    }
+    .success-copy-btn{
+      flex-shrink:0; display:flex; align-items:center; gap:6px; background:#1f1f1f; border:1px solid var(--border);
+      color:#fff; font-family:'Kanit', sans-serif; font-size:12.5px; font-weight:600;
+      padding:9px 13px; border-radius:8px; cursor:pointer; transition:border-color .2s, background .2s, color .2s;
+    }
+    .success-copy-btn:hover{ border-color:var(--red-soft); background:rgba(200,30,44,0.1); }
+    .success-copy-btn svg{ width:15px; height:15px; flex-shrink:0; }
+    .success-copy-btn.copied{ border-color:#2ecc71; color:#7be6a5; background:rgba(46,204,113,0.12); }
+    .success-save-btn{
+      width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+      padding:12px; border-radius:10px; margin-bottom:10px;
+      background:#1a1a1a; border:1px solid var(--border); color:#fff;
+      font-family:'Kanit', sans-serif; font-size:14px; font-weight:600;
+      cursor:pointer; transition:border-color .2s, background .2s, opacity .2s;
+    }
+    .success-save-btn:hover{ border-color:var(--red-soft); background:rgba(200,30,44,0.08); }
+    .success-save-btn:disabled{ opacity:0.6; cursor:not-allowed; }
+    .success-save-btn svg{ width:16px; height:16px; flex-shrink:0; }
+    .success-close-btn{
+      width:100%; padding:13px; border:none; border-radius:10px;
+      background:linear-gradient(90deg, var(--red) 0%, var(--red-soft) 100%);
+      color:#fff; font-family:'Kanit', sans-serif; font-size:14.5px; font-weight:600;
+      cursor:pointer; transition:transform .15s, box-shadow .15s;
+    }
+    .success-close-btn:hover{ transform:translateY(-1px); }
+    @media (max-width:480px){
+      .success-card{ padding:26px 20px; }
+      .success-code-text{ font-size:17px; }
+    }
+
+    /* ===== การ์ดใบยืนยันการจอง (นอกจอ) ใช้เป็นต้นแบบตอนแคปเป็นรูปภาพด้วย html2canvas =====
+       วางไว้นอกจอถาวร (ไม่ใช้ display:none เพราะ html2canvas ต้องเห็น element จริงถึงจะวาดได้) */
+    .receipt-offscreen{ position:fixed; left:-9999px; top:0; z-index:-1; }
+    .receipt-card{
+      width:380px; background:#0d0d0d; padding:28px 24px; font-family:'Kanit', sans-serif;
+      color:#fff; border:1px solid rgba(255,255,255,0.08);
+    }
+    .receipt-badge{
+      display:inline-block; padding:5px 14px; border-radius:999px;
+      background:linear-gradient(90deg, #c81e2c, #e8384a);
+      font-size:11px; letter-spacing:1.5px; font-weight:500; margin-bottom:14px; color:#fff;
+    }
+    .receipt-status{ display:flex; align-items:center; gap:8px; margin-bottom:18px; }
+    .receipt-status-icon{
+      width:30px; height:30px; border-radius:50%; background:rgba(46,204,113,0.16);
+      border:1px solid rgba(46,204,113,0.4); display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .receipt-status-icon svg{ width:16px; height:16px; }
+    .receipt-status-text{ font-size:15px; font-weight:600; color:#fff; }
+    .receipt-code-label{ font-size:11px; color:#9a9a9a; letter-spacing:0.3px; margin-bottom:6px; }
+    .receipt-code-text{ font-size:24px; font-weight:700; letter-spacing:1.5px; color:#ff8a93; margin-bottom:20px; word-break:break-all; }
+    .receipt-row{ display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:12.5px; }
+    .receipt-row:last-child{ border-bottom:none; }
+    .receipt-row .rlabel{ color:#9a9a9a; flex-shrink:0; width:40%; line-height:1.4; }
+    .receipt-row .rvalue{ color:#fff; font-weight:500; text-align:right; word-break:break-word; line-height:1.4; flex:1; }
+    .receipt-photos{ padding-top:12px; }
+    .receipt-photos-label{ font-size:11px; color:#9a9a9a; letter-spacing:0.3px; margin-bottom:10px; }
+    .receipt-photos-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+    .receipt-photos-grid img{ width:104px; height:104px; object-fit:cover; border-radius:8px; border:1px solid rgba(255,255,255,0.1); }
+    .receipt-footer{ margin-top:16px; padding-top:14px; border-top:1px dashed rgba(255,255,255,0.15); font-size:10.5px; color:#7a7a7a; text-align:center; line-height:1.5; }
   </style>
 </head>
 <body>
@@ -436,6 +526,61 @@
     </div>
   </div>
 
+  <!-- ===== หน้าสำเร็จหลังจองเรียบร้อย (success step) =====
+       โผล่ขึ้นหลังส่งข้อมูลไปยัง Apps Script สำเร็จ แสดงรหัสการจองพร้อมปุ่มคัดลอก ===== -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-card">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 13l4 4L19 7" stroke="#2ecc71" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="success-title" id="successTitle">บันทึกการจองเรียบร้อยแล้ว</div>
+      <div class="success-subtitle" id="successSubtitle">ทีมงานจะติดต่อกลับตามวันและเวลาที่นัดหมาย</div>
+      <div class="success-code-label" id="successCodeLabel">รหัสการจองของคุณคือ</div>
+      <div class="success-code-box">
+        <span class="success-code-text" id="successCodeText">-</span>
+        <button type="button" class="success-copy-btn" id="successCopyBtn">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="2"/>
+            <path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          <span id="successCopyBtnText">คัดลอกรหัส</span>
+        </button>
+      </div>
+      <button type="button" class="success-save-btn" id="successSaveImageBtn">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span id="successSaveImageBtnText">บันทึกเป็นรูปภาพ</span>
+      </button>
+      <button type="button" class="success-close-btn" id="successCloseBtn">ปิด</button>
+    </div>
+  </div>
+
+  <!-- ===== การ์ดใบยืนยันการจอง (นอกจอ) - ใช้เป็นต้นแบบตอนแคปหน้าจอเป็นรูปภาพด้วย html2canvas
+       เนื้อหาจะถูกเติมด้วย JS (renderReceiptCard_) ทุกครั้งก่อนกดบันทึกรูปภาพ ===== -->
+  <div class="receipt-offscreen" id="receiptOffscreen">
+    <div class="receipt-card" id="receiptCard">
+      <span class="receipt-badge" id="receiptBadge">ระบบจองคิว</span>
+      <div class="receipt-status">
+        <div class="receipt-status-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 13l4 4L19 7" stroke="#2ecc71" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="receipt-status-text" id="receiptStatusText">บันทึกการจองเรียบร้อยแล้ว</span>
+      </div>
+      <div class="receipt-code-label" id="receiptCodeLabel">รหัสการจองของคุณคือ</div>
+      <div class="receipt-code-text" id="receiptCodeText">-</div>
+      <div id="receiptBody"></div>
+      <div id="receiptPhotos"></div>
+      <div class="receipt-footer" id="receiptFooter"></div>
+    </div>
+  </div>
+
   <!-- ===== ปุ่มลอย LINE OA มุมขวาล่าง กดแล้วเปิดแชท LINE OA ทันที =====
        *** แก้ลิงก์ตรงนี้ให้เป็นลิงก์ LINE OA จริงของร้าน เช่น https://line.me/R/ti/p/@your_line_id *** -->
   <a href="https://lin.ee/y7u2oYH" target="_blank" rel="noopener" class="line-float-btn" id="lineFloatBtn" aria-label="Chat on LINE">
@@ -466,9 +611,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/l10n/zh.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     /* *** แก้ URL ตรงนี้ให้เป็นลิงก์ Apps Script /exec ล่าสุดของพี่ *** */
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTtzHq7vKl5wJ_7cqOYEGAi3wgWs8scwH26J9FBPjYhoncG5AZ5wPHd80KijRFMr7d/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2AAvehxPZrLlnB_v2j-lJWtcDeGjYXdt27Kkh2Dp8gG33smY0Z4rMtfD1T8EJ8A68/exec';
 
     // ===== i18n =====
     const I18N = {
@@ -508,7 +654,17 @@
         draftBannerTitle: 'พบร่างข้อมูลที่ยังไม่เสร็จ',
         draftSavedAt: function (str) { return 'บันทึกไว้เมื่อ ' + str + ' (ไม่รวมรูปภาพที่เคยแนบ)'; },
         draftRestoreBtn: 'กู้คืนข้อมูล',
-        draftDiscardBtn: 'ทิ้งร่างนี้'
+        draftDiscardBtn: 'ทิ้งร่างนี้',
+        successTitle: 'บันทึกการจองเรียบร้อยแล้ว',
+        successSubtitle: 'ทีมงานจะติดต่อกลับตามวันและเวลาที่นัดหมาย',
+        successCodeLabel: 'รหัสการจองของคุณคือ',
+        successCopyBtn: 'คัดลอกรหัส',
+        successCopied: 'คัดลอกแล้ว!',
+        successCloseBtn: 'ปิด',
+        successSaveImageBtn: 'บันทึกเป็นรูปภาพ',
+        successGeneratingImage: 'กำลังสร้างรูปภาพ...',
+        successSaveImageError: 'ไม่สามารถสร้างรูปภาพได้ กรุณาลองใหม่',
+        receiptFooter: function (str) { return 'สร้างเมื่อ ' + str + ' • กรุณาเก็บรูปนี้ไว้เป็นหลักฐานการจอง'; }
       },
       EN: {
         badge: 'BOOKING SYSTEM', title: 'Booking System', subtitle: 'Fill in the details to book a service slot',
@@ -546,7 +702,17 @@
         draftBannerTitle: 'We found an unfinished draft',
         draftSavedAt: function (str) { return 'Saved at ' + str + ' (attached photos are not restored)'; },
         draftRestoreBtn: 'Restore Draft',
-        draftDiscardBtn: 'Discard'
+        draftDiscardBtn: 'Discard',
+        successTitle: 'Booking Confirmed',
+        successSubtitle: 'Our team will contact you around the scheduled date and time.',
+        successCodeLabel: 'Your booking code is',
+        successCopyBtn: 'Copy Code',
+        successCopied: 'Copied!',
+        successCloseBtn: 'Close',
+        successSaveImageBtn: 'Save as Image',
+        successGeneratingImage: 'Generating image...',
+        successSaveImageError: 'Could not generate the image. Please try again.',
+        receiptFooter: function (str) { return 'Generated at ' + str + ' • Please keep this image as proof of booking.'; }
       },
       ZH: {
         badge: '预约系统', title: '预约系统', subtitle: '请填写以下信息以预约服务',
@@ -584,7 +750,17 @@
         draftBannerTitle: '发现未完成的草稿',
         draftSavedAt: function (str) { return '保存于 ' + str + '（不包含已上传的图片）'; },
         draftRestoreBtn: '恢复草稿',
-        draftDiscardBtn: '放弃草稿'
+        draftDiscardBtn: '放弃草稿',
+        successTitle: '预约已成功保存',
+        successSubtitle: '我们的团队将在预约的日期和时间与您联系。',
+        successCodeLabel: '您的预约编号是',
+        successCopyBtn: '复制编号',
+        successCopied: '已复制！',
+        successCloseBtn: '关闭',
+        successSaveImageBtn: '保存为图片',
+        successGeneratingImage: '正在生成图片...',
+        successSaveImageError: '无法生成图片，请重试',
+        receiptFooter: function (str) { return '生成于 ' + str + ' • 请保留此图片作为预约凭证'; }
       }
     };
 
@@ -781,8 +957,19 @@
     const reviewCardBody = document.getElementById('reviewCardBody');
     const reviewEditBtn = document.getElementById('reviewEditBtn');
     const reviewConfirmBtn = document.getElementById('reviewConfirmBtn');
+    const successOverlay = document.getElementById('successOverlay');
+    const successCodeText = document.getElementById('successCodeText');
+    const successCopyBtn = document.getElementById('successCopyBtn');
+    const successCopyBtnText = document.getElementById('successCopyBtnText');
+    const successCloseBtn = document.getElementById('successCloseBtn');
+    const successSaveImageBtn = document.getElementById('successSaveImageBtn');
+    const successSaveImageBtnText = document.getElementById('successSaveImageBtnText');
+    const receiptCard = document.getElementById('receiptCard');
     // ===== เก็บข้อมูลฟอร์มที่ผ่านการตรวจครบแล้ว รอลูกค้ากด "ยืนยันการจอง" อีกครั้งในหน้าสรุป =====
     let pendingFormData = null;
+    // ===== เก็บข้อมูลของการจองล่าสุดที่จองสำเร็จไว้ ใช้สร้างใบยืนยัน (รูปภาพ) หลังจากฟอร์มถูกรีเซ็ตไปแล้ว =====
+    let lastSubmittedFormData = null;
+    let lastBookingCode = '';
 
     // ===== เก็บรูปที่เลือกไว้ทั้งหมดเป็น array: [{ base64, fileName, mimeType }, ...] =====
     let selectedImages = [];
@@ -1215,6 +1402,10 @@
       if (typeof updateDraftBannerText_ === 'function' && draftBannerEl && draftBannerEl.classList.contains('active')) {
         updateDraftBannerText_();
       }
+      // อัปเดตข้อความในหน้าสำเร็จด้วย ถ้าเผลอสลับภาษาระหว่างที่หน้าสำเร็จเปิดค้างอยู่
+      if (successOverlay.classList.contains('active')) {
+        applySuccessLanguage_();
+      }
     }
 
     document.querySelectorAll('.lang-opt').forEach(function (btn) {
@@ -1575,6 +1766,200 @@
       finalizeSubmit(pendingFormData);
     });
 
+    // ===== หน้าสำเร็จหลังจองเรียบร้อย: อัปเดตข้อความคงที่ตามภาษาปัจจุบัน (ไม่รวมรหัสการจอง) =====
+    function applySuccessLanguage_() {
+      const t = I18N[currentLang];
+      document.getElementById('successTitle').textContent = t.successTitle;
+      document.getElementById('successSubtitle').textContent = t.successSubtitle;
+      document.getElementById('successCodeLabel').textContent = t.successCodeLabel;
+      successCloseBtn.textContent = t.successCloseBtn;
+      if (!successCopyBtn.classList.contains('copied')) {
+        successCopyBtnText.textContent = t.successCopyBtn;
+      }
+      if (!successSaveImageBtn.disabled) {
+        successSaveImageBtnText.textContent = t.successSaveImageBtn;
+      }
+    }
+
+    /**
+     * ดึงรหัสการจองจากผลลัพธ์ที่ Apps Script ส่งกลับมา
+     * รองรับหลายชื่อฟิลด์เผื่อฝั่ง backend ใช้ชื่อคีย์ไม่ตรงกัน (bookingCode / bookingId / code / reference / refNo)
+     */
+    function extractBookingCode_(res) {
+      return res && (res.bookingCode || res.bookingId || res.code || res.reference || res.refNo || res.ref) || '';
+    }
+
+    /**
+     * เปิดหน้าสำเร็จ แสดงรหัสการจองพร้อมปุ่มคัดลอก
+     */
+    function showSuccessModal_(bookingCode, formData) {
+      lastBookingCode = bookingCode || '';
+      lastSubmittedFormData = formData || null;
+      applySuccessLanguage_();
+      successCopyBtn.classList.remove('copied');
+      successCopyBtnText.textContent = I18N[currentLang].successCopyBtn;
+      successSaveImageBtn.disabled = false;
+      successSaveImageBtnText.textContent = I18N[currentLang].successSaveImageBtn;
+      successCodeText.textContent = bookingCode || '-';
+      successOverlay.classList.add('active');
+    }
+
+    /**
+     * เติมเนื้อหาลงในการ์ดใบยืนยันการจอง (นอกจอ) จากข้อมูลการจองล่าสุดที่สำเร็จ ก่อนแคปเป็นรูปภาพ
+     */
+    function renderReceiptCard_() {
+      const lang = currentLang;
+      const t = I18N[lang];
+      document.getElementById('receiptBadge').textContent = t.badge;
+      document.getElementById('receiptStatusText').textContent = t.successTitle;
+      document.getElementById('receiptCodeLabel').textContent = t.successCodeLabel;
+      document.getElementById('receiptCodeText').textContent = lastBookingCode || '-';
+
+      const body = document.getElementById('receiptBody');
+      body.innerHTML = '';
+      if (lastSubmittedFormData) {
+        buildReviewRows_(lastSubmittedFormData).forEach(function (r) {
+          const rowEl = document.createElement('div');
+          rowEl.className = 'receipt-row';
+          const lbl = document.createElement('div');
+          lbl.className = 'rlabel';
+          lbl.textContent = r.label;
+          const val = document.createElement('div');
+          val.className = 'rvalue';
+          val.textContent = r.value;
+          rowEl.appendChild(lbl);
+          rowEl.appendChild(val);
+          body.appendChild(rowEl);
+        });
+      }
+
+      const localeMap = { TH: 'th-TH', EN: 'en-US', ZH: 'zh-CN' };
+      let generatedAtStr = '';
+      try {
+        generatedAtStr = new Date().toLocaleString(localeMap[lang] || 'en-US');
+      } catch (e) {
+        generatedAtStr = new Date().toString();
+      }
+      document.getElementById('receiptFooter').textContent = t.receiptFooter(generatedAtStr);
+
+      // ===== รูปหน้างานที่ลูกค้าแนบไว้ตอนจอง (ถ้ามี) - แสดงเป็น thumbnail grid ในใบยืนยันด้วย =====
+      const photosEl = document.getElementById('receiptPhotos');
+      photosEl.innerHTML = '';
+      const images = (lastSubmittedFormData && lastSubmittedFormData.images) || [];
+      if (images.length > 0) {
+        photosEl.className = 'receipt-photos';
+        const label = document.createElement('div');
+        label.className = 'receipt-photos-label';
+        label.textContent = t.image;
+        const grid = document.createElement('div');
+        grid.className = 'receipt-photos-grid';
+        images.forEach(function (img) {
+          const im = document.createElement('img');
+          im.src = img.base64;
+          im.alt = img.fileName || '';
+          grid.appendChild(im);
+        });
+        photosEl.appendChild(label);
+        photosEl.appendChild(grid);
+      } else {
+        photosEl.className = '';
+      }
+    }
+
+    function waitForImagesToLoad_(container) {
+      const imgs = Array.prototype.slice.call(container.querySelectorAll('img'));
+      return Promise.all(imgs.map(function (img) {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise(function (resolve) {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }));
+    }
+
+    successSaveImageBtn.addEventListener('click', function () {
+      const t = I18N[currentLang];
+      const originalText = t.successSaveImageBtn;
+      renderReceiptCard_();
+      successSaveImageBtn.disabled = true;
+      successSaveImageBtnText.textContent = t.successGeneratingImage;
+
+      // รอรูปหน้างานที่แนบไว้ (ถ้ามี) โหลด/ถอดรหัสให้เสร็จก่อน ไม่งั้น html2canvas อาจแคปได้รูปว่างๆ
+      waitForImagesToLoad_(receiptCard).then(function () {
+        // รอเฟรมถัดไปให้ browser วาด DOM ของการ์ดที่เพิ่งเติมเนื้อหาให้เสร็จก่อน ค่อยแคปด้วย html2canvas
+        requestAnimationFrame(function () {
+          html2canvas(receiptCard, { backgroundColor: '#0d0d0d', scale: 2, useCORS: true })
+            .then(function (canvas) {
+              canvas.toBlob(function (blob) {
+                successSaveImageBtn.disabled = false;
+                successSaveImageBtnText.textContent = originalText;
+                if (!blob) {
+                  showAlert('error', t.successSaveImageError);
+                  return;
+                }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'booking-' + (lastBookingCode || 'confirmation') + '.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+              }, 'image/png');
+            })
+            .catch(function () {
+              successSaveImageBtn.disabled = false;
+              successSaveImageBtnText.textContent = originalText;
+              showAlert('error', t.successSaveImageError);
+            });
+        });
+      });
+    });
+
+    successCopyBtn.addEventListener('click', function () {
+      const code = successCodeText.textContent || '';
+      const t = I18N[currentLang];
+
+      function markCopied() {
+        successCopyBtn.classList.add('copied');
+        successCopyBtnText.textContent = t.successCopied;
+        setTimeout(function () {
+          successCopyBtn.classList.remove('copied');
+          successCopyBtnText.textContent = t.successCopyBtn;
+        }, 2000);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(markCopied).catch(function () {
+          fallbackCopy_(code);
+          markCopied();
+        });
+      } else {
+        fallbackCopy_(code);
+        markCopied();
+      }
+    });
+
+    // สำรองไว้เผื่อเบราว์เซอร์ไม่รองรับ navigator.clipboard (เช่น หน้าเว็บที่ไม่ได้เปิดผ่าน HTTPS)
+    function fallbackCopy_(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) { /* เพิกเฉยถ้าคัดลอกไม่สำเร็จ ผู้ใช้เลือกคัดลอกเองจากกล่องได้ */ }
+      document.body.removeChild(ta);
+    }
+
+    successCloseBtn.addEventListener('click', function () {
+      successOverlay.classList.remove('active');
+    });
+    successOverlay.addEventListener('click', function (e) {
+      if (e.target === successOverlay) successOverlay.classList.remove('active');
+    });
+
     function resetFormUI() {
       pendingFormData = null;
       clearDraftStorage_();
@@ -1604,7 +1989,9 @@
           submitBtn.disabled = false;
           submitBtn.textContent = t.submitBtn;
           if (res.success) {
-            showAlert('success', res.message);
+            // ===== แสดงหน้าสำเร็จพร้อมรหัสการจอง + ปุ่มคัดลอก แทนการขึ้น alert ธรรมดา =====
+            const bookingCode = extractBookingCode_(res);
+            showSuccessModal_(bookingCode, formData);
             resetFormUI();
           } else {
             showAlert('error', res.message);
