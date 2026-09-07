@@ -37,6 +37,20 @@
     }
     .lang-switch .lang-opt:hover:not(.active){ background:rgba(200,30,44,0.15); color:var(--white); }
     .lang-switch .lang-opt.active{ background:linear-gradient(90deg, var(--red), var(--red-soft)); color:#fff; }
+    /* ===== ปุ่ม "ตรวจสอบสถานะงาน" มุมซ้ายบน (สมมาตรกับ lang-switch มุมขวาบน) - กดแล้วเปิดหน้าตรวจสอบสถานะ ===== */
+    .status-check-btn{
+      position:absolute; top:0; left:0; z-index:5;
+      display:flex; align-items:center; gap:6px;
+      background:rgba(255,255,255,0.06); border:1px solid var(--border);
+      border-radius:999px; padding:8px 16px 8px 10px; cursor:pointer;
+      color:var(--white); font-family:'Kanit', sans-serif; font-size:12px; font-weight:500;
+      letter-spacing:0.3px; transition:border-color .2s, background .2s;
+    }
+    .status-check-btn:hover{ border-color:var(--red-soft); background:rgba(200,30,44,0.12); }
+    .status-check-btn svg{ width:15px; height:15px; flex-shrink:0; color:#ff8a93; }
+    @media (max-width:480px){
+      .status-check-btn{ position:static; display:inline-flex; margin-bottom:14px; margin-right:8px; }
+    }
     .header{ text-align:center; margin-bottom:28px; padding-top:4px; }
     .header .badge{
       display:inline-block; padding:6px 18px; border-radius:999px;
@@ -389,6 +403,92 @@
     .receipt-photos-grid{ display:flex; flex-wrap:wrap; gap:8px; }
     .receipt-photos-grid img{ width:104px; height:104px; object-fit:cover; border-radius:8px; border:1px solid rgba(255,255,255,0.1); }
     .receipt-footer{ margin-top:16px; padding-top:14px; border-top:1px dashed rgba(255,255,255,0.15); font-size:10.5px; color:#7a7a7a; text-align:center; line-height:1.5; }
+
+    /* ===== หน้าตรวจสอบสถานะงาน (status-check page) - เต็มจอ พื้นหลังชุดเดียวกับหน้าหลัก =====
+       เปิดจากปุ่ม "ตรวจสอบสถานะงาน" มุมซ้ายบน / ปิดด้วยปุ่มย้อนกลับหรือคลิกนอกกรอบคอนเทนต์ */
+    .status-page-overlay{
+      position:fixed; inset:0; z-index:1200; display:none;
+      overflow-y:auto; padding:40px 16px;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(200,30,44,0.35), transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(200,30,44,0.25), transparent 45%),
+        linear-gradient(160deg, #050505 0%, #161616 45%, #0a0a0a 100%);
+    }
+    .status-page-overlay.active{ display:block; }
+    .status-page-inner{ width:100%; max-width:640px; margin:0 auto; position:relative; }
+    .status-back-btn{
+      position:absolute; top:0; left:0; z-index:5;
+      display:flex; align-items:center; justify-content:center;
+      width:34px; height:34px; border-radius:50%;
+      background:rgba(255,255,255,0.06); border:1px solid var(--border);
+      color:#fff; cursor:pointer; transition:border-color .2s, background .2s;
+    }
+    .status-back-btn:hover{ border-color:var(--red-soft); background:rgba(200,30,44,0.12); }
+    .status-back-btn svg{ width:16px; height:16px; }
+    .status-header{ text-align:center; margin-bottom:24px; padding-top:4px; }
+    .status-header-icon{
+      width:56px; height:56px; border-radius:50%; margin:0 auto 16px auto;
+      background:linear-gradient(135deg, var(--red), var(--red-soft));
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 10px 26px rgba(200,30,44,0.4);
+    }
+    .status-header-icon svg{ width:26px; height:26px; }
+    .status-header h1{
+      font-size:26px; font-weight:700;
+      background:linear-gradient(90deg, #ffffff 0%, #ff8a93 45%, var(--red) 100%);
+      -webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:0.3px;
+    }
+    .status-header p{ color:var(--gray); font-size:13.5px; margin-top:8px; font-weight:300; }
+    .status-search-actions{ display:flex; gap:10px; margin-top:4px; }
+    .status-search-btn{
+      width:100%; padding:14px; border:none; border-radius:12px;
+      background:linear-gradient(90deg, var(--red) 0%, var(--red-soft) 100%);
+      color:var(--white); font-family:'Kanit', sans-serif; font-size:15.5px; font-weight:600;
+      letter-spacing:0.3px; cursor:pointer; margin-top:6px;
+      transition:transform .15s, box-shadow .15s, opacity .15s; box-shadow:0 10px 30px rgba(200,30,44,0.35);
+    }
+    .status-search-btn:hover{ transform:translateY(-1px); box-shadow:0 14px 34px rgba(200,30,44,0.45); }
+    .status-search-btn:disabled{ opacity:0.55; cursor:not-allowed; transform:none; }
+    .status-hint{ font-size:12px; color:var(--gray); margin-top:-10px; margin-bottom:20px; line-height:1.5; }
+    .status-result-card{ margin-top:20px; display:none; }
+    .status-result-card.active{ display:block; }
+    .status-result-row{
+      display:flex; justify-content:space-between; align-items:flex-start; gap:14px;
+      padding:11px 0; border-bottom:1px solid var(--border); font-size:13.5px;
+    }
+    .status-result-row:last-child{ border-bottom:none; }
+    .status-result-row .rlabel{ color:var(--gray); flex-shrink:0; width:42%; line-height:1.4; }
+    .status-result-row .rvalue{ color:#fff; font-weight:600; text-align:right; word-break:break-word; line-height:1.4; flex:1; }
+    /* ===== stepper แสดงความคืบหน้างาน 4 ขั้นตอน: circle -> circle -> circle -> checkbox (ขั้นสุดท้าย) ===== */
+    .status-steps{ margin-top:22px; padding-top:6px; }
+    .status-step{ display:flex; align-items:flex-start; gap:14px; position:relative; }
+    .status-step-icon-col{ display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+    .status-step-icon{
+      width:26px; height:26px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      border:2px solid rgba(255,255,255,0.2); background:#141414; transition:background .2s, border-color .2s;
+    }
+    .status-step-icon.checkbox{ border-radius:7px; }
+    .status-step-icon svg{ width:13px; height:13px; }
+    .status-step-icon.done{ background:linear-gradient(135deg, var(--red), var(--red-soft)); border-color:var(--red-soft); }
+    .status-step-icon.current{ background:linear-gradient(135deg, var(--red), var(--red-soft)); border-color:var(--red-soft); animation:statusPulse 1.6s ease-in-out infinite; }
+    .status-step-icon.pending{ background:#141414; border-color:rgba(255,255,255,0.18); }
+    .status-step-icon.done-final{ background:rgba(46,204,113,0.18); border-color:#2ecc71; }
+    @keyframes statusPulse{
+      0%, 100%{ box-shadow:0 0 0 0 rgba(200,30,44,0.45); }
+      50%{ box-shadow:0 0 0 6px rgba(200,30,44,0); }
+    }
+    .status-step-line{ width:2px; flex:1; min-height:26px; background:rgba(255,255,255,0.14); margin:2px 0; }
+    .status-step-line.done{ background:var(--red-soft); }
+    .status-step-body{ padding-top:3px; padding-bottom:22px; flex:1; }
+    .status-step:last-child .status-step-body{ padding-bottom:2px; }
+    .status-step-label{ font-size:14px; font-weight:500; color:var(--gray); line-height:1.4; }
+    .status-step-label.done, .status-step-label.current{ color:#fff; font-weight:600; }
+    .status-page-footer{ text-align:center; color:var(--gray); font-size:12px; margin-top:22px; font-weight:300; }
+    @media (max-width:480px){
+      .status-page-overlay{ padding:64px 16px 40px 16px; }
+      .status-header h1{ font-size:22px; }
+    }
   </style>
 </head>
 <body>
@@ -398,6 +498,15 @@
       <button type="button" class="lang-opt" data-lang="EN">EN</button>
       <button type="button" class="lang-opt" data-lang="ZH">中文</button>
     </div>
+
+    <!-- ===== ปุ่มตรวจสอบสถานะงาน มุมซ้ายบน - กดแล้วเปิดหน้าตรวจสอบสถานะแบบเต็มจอ ===== -->
+    <button type="button" class="status-check-btn" id="statusCheckBtn">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span id="statusCheckBtnText">ตรวจสอบสถานะงาน</span>
+    </button>
 
     <div class="header">
       <span class="badge" id="badgeText">ระบบจองคิว</span>
@@ -509,6 +618,58 @@
     </div>
 
     <p class="footer-note" id="footerNote">เปิดให้จองเวลา 08:00 - 17:30 น. เท่านั้น</p>
+  </div>
+
+  <!-- ===== หน้าตรวจสอบสถานะงาน (status-check page) - เต็มจอ =====
+       ลูกค้ากรอกเลขที่การจอง + เบอร์โทร 4 ตัวท้าย เพื่อยืนยันตัวตนและดูความคืบหน้างาน ===== -->
+  <div class="status-page-overlay" id="statusPageOverlay">
+    <div class="status-page-inner">
+      <button type="button" class="status-back-btn" id="statusBackBtn" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="lang-switch" id="statusLangSwitch">
+        <button type="button" class="lang-opt" data-lang="TH">ไทย</button>
+        <button type="button" class="lang-opt" data-lang="EN">EN</button>
+        <button type="button" class="lang-opt" data-lang="ZH">中文</button>
+      </div>
+
+      <div class="status-header">
+        <div class="status-header-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2.2"/>
+            <path d="M21 21l-4.3-4.3" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 id="statusPageTitle">ตรวจสอบสถานะงาน</h1>
+        <p id="statusPageSubtitle">กรอกเลขที่การจองและเบอร์โทร เพื่อดูความคืบหน้า</p>
+      </div>
+
+      <div class="card">
+        <div id="statusAlertBox" class="alert"></div>
+
+        <form id="statusCheckForm">
+          <div class="field">
+            <label><span id="lblStatusBookingCode">เลขที่การจอง</span><span class="req">*</span></label>
+            <input type="text" id="statusBookingCode" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label><span id="lblStatusPhoneLast4">เบอร์โทร 4 ตัวท้าย</span><span class="req">*</span></label>
+            <input type="text" id="statusPhoneLast4" inputmode="numeric" maxlength="4" autocomplete="off" required>
+            <div class="status-hint" id="statusPhoneHint" style="margin-top:6px; margin-bottom:0;"></div>
+          </div>
+          <button type="submit" class="status-search-btn" id="statusSearchBtn">ตรวจสอบสถานะ</button>
+        </form>
+
+        <div class="status-result-card" id="statusResultCard">
+          <div id="statusResultRows"></div>
+          <div class="status-steps" id="statusSteps"></div>
+        </div>
+      </div>
+
+      <p class="status-page-footer" id="statusPageFooter">Master Kitchen · ระบบตรวจสอบสถานะงาน</p>
+    </div>
   </div>
 
   <!-- ===== หน้าสรุปก่อนยืนยันการจอง (review step) =====
@@ -630,8 +791,6 @@
         mapPicked: 'ปักหมุดตำแหน่งแล้ว ✓',
         mapLocateError: 'ไม่สามารถระบุตำแหน่งได้ กรุณาลากหมุดบนแผนที่แทน',
         mapAddressLoading: 'กำลังค้นหาที่อยู่จากพิกัด...',
-        mapGeocoding: 'กำลังค้นหาตำแหน่งจากที่อยู่...',
-        mapGeocodeNotFound: 'ไม่พบตำแหน่งจากที่อยู่นี้ กรุณาปักหมุดเอง',
         kitchenInfo: 'ข้อมูลเครื่องครัว', kitchenInfoPh: 'ยี่ห้อ / รุ่น / อาการเบื้องต้น',
         phone: 'เบอร์ติดต่อ', email: 'อีเมล (สำหรับส่งใบยืนยันการจอง)',
         image: 'รูปภาพ', fileDropText: 'คลิกเพื่อเลือกรูปภาพ หรือ ลากไฟล์มาวางที่นี่ (เลือกได้หลายรูป)',
@@ -666,7 +825,26 @@
         successSaveImageBtn: 'บันทึกเป็นรูปภาพ',
         successGeneratingImage: 'กำลังสร้างรูปภาพ...',
         successSaveImageError: 'ไม่สามารถสร้างรูปภาพได้ กรุณาลองใหม่',
-        receiptFooter: function (str) { return 'สร้างเมื่อ ' + str + ' • กรุณาเก็บรูปนี้ไว้เป็นหลักฐานการจอง'; }
+        receiptFooter: function (str) { return 'สร้างเมื่อ ' + str + ' • กรุณาเก็บรูปนี้ไว้เป็นหลักฐานการจอง'; },
+        statusCheckBtn: 'ตรวจสอบสถานะงาน',
+        statusPageTitle: 'ตรวจสอบสถานะงาน',
+        statusPageSubtitle: 'กรอกเลขที่การจองและเบอร์โทร เพื่อดูความคืบหน้า',
+        statusPageFooter: 'Master Kitchen · ระบบตรวจสอบสถานะงาน',
+        statusBookingCode: 'เลขที่การจอง',
+        statusPhoneLast4: 'เบอร์โทร 4 ตัวท้าย',
+        statusPhoneHint: 'ใช้เบอร์เดียวกับตอนจองคิว เพื่อยืนยันตัวตน',
+        statusSearchBtn: 'ตรวจสอบสถานะ',
+        statusSearching: 'กำลังตรวจสอบ...',
+        statusRequiredError: 'กรุณากรอกเลขที่การจองและเบอร์โทร 4 ตัวท้ายให้ครบถ้วน',
+        statusNotFound: 'ไม่พบข้อมูลการจอง กรุณาตรวจสอบเลขที่การจองและเบอร์โทรอีกครั้ง',
+        statusGenericError: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
+        statusContactName: 'ชื่อผู้จอง',
+        statusAppointmentDate: 'วันที่นัดหมาย',
+        statusAppointmentTime: 'เวลานัดหมาย',
+        statusStep1: 'ยืนยันใบเสนอราคา',
+        statusStep2: 'ยืนยันนัดหมาย',
+        statusStep3: 'ช่างดำเนินการ',
+        statusStep4: 'ตรวจรับงาน'
       },
       EN: {
         badge: 'BOOKING SYSTEM', title: 'Booking System', subtitle: 'Fill in the details to book a service slot',
@@ -680,8 +858,6 @@
         mapPicked: 'Location pinned ✓',
         mapLocateError: 'Could not detect your location. Please drag the pin on the map instead.',
         mapAddressLoading: 'Looking up address...',
-        mapGeocoding: 'Looking up location from address...',
-        mapGeocodeNotFound: 'Could not find this address. Please pin the location manually.',
         kitchenInfo: 'Kitchen Equipment Info', kitchenInfoPh: 'Brand / model / issue description',
         phone: 'Phone Number', email: 'Email (for booking confirmation)',
         image: 'Photo', fileDropText: 'Click to select images, or drag & drop here (multiple allowed)',
@@ -716,7 +892,26 @@
         successSaveImageBtn: 'Save as Image',
         successGeneratingImage: 'Generating image...',
         successSaveImageError: 'Could not generate the image. Please try again.',
-        receiptFooter: function (str) { return 'Generated at ' + str + ' • Please keep this image as proof of booking.'; }
+        receiptFooter: function (str) { return 'Generated at ' + str + ' • Please keep this image as proof of booking.'; },
+        statusCheckBtn: 'Check Status',
+        statusPageTitle: 'Check Job Status',
+        statusPageSubtitle: 'Enter your booking code and phone number to check progress',
+        statusPageFooter: 'Master Kitchen · Job Status Tracker',
+        statusBookingCode: 'Booking Code',
+        statusPhoneLast4: 'Last 4 Digits of Phone',
+        statusPhoneHint: 'Use the same phone number used when booking, to verify your identity',
+        statusSearchBtn: 'Check Status',
+        statusSearching: 'Checking...',
+        statusRequiredError: 'Please enter both the booking code and the last 4 digits of your phone number',
+        statusNotFound: 'Booking not found. Please check your booking code and phone number.',
+        statusGenericError: 'An error occurred. Please try again.',
+        statusContactName: 'Customer Name',
+        statusAppointmentDate: 'Appointment Date',
+        statusAppointmentTime: 'Appointment Time',
+        statusStep1: 'Quote Confirmed',
+        statusStep2: 'Appointment Confirmed',
+        statusStep3: 'Technician In Progress',
+        statusStep4: 'Work Accepted'
       },
       ZH: {
         badge: '预约系统', title: '预约系统', subtitle: '请填写以下信息以预约服务',
@@ -730,8 +925,6 @@
         mapPicked: '已标记位置 ✓',
         mapLocateError: '无法获取您的位置，请在地图上拖动图钉。',
         mapAddressLoading: '正在查询地址...',
-        mapGeocoding: '正在根据地址查询位置...',
-        mapGeocodeNotFound: '找不到该地址的位置，请手动标记。',
         kitchenInfo: '厨房设备信息', kitchenInfoPh: '品牌 / 型号 / 故障说明',
         phone: '联系电话', email: '电子邮箱（用于接收预约确认信）',
         image: '照片', fileDropText: '点击选择图片，或将文件拖放到此处（可选择多张）',
@@ -766,7 +959,26 @@
         successSaveImageBtn: '保存为图片',
         successGeneratingImage: '正在生成图片...',
         successSaveImageError: '无法生成图片，请重试',
-        receiptFooter: function (str) { return '生成于 ' + str + ' • 请保留此图片作为预约凭证'; }
+        receiptFooter: function (str) { return '生成于 ' + str + ' • 请保留此图片作为预约凭证'; },
+        statusCheckBtn: '查询状态',
+        statusPageTitle: '查询工作状态',
+        statusPageSubtitle: '输入预约编号和电话号码以查看进度',
+        statusPageFooter: 'Master Kitchen · 工作状态查询系统',
+        statusBookingCode: '预约编号',
+        statusPhoneLast4: '电话号码后4位',
+        statusPhoneHint: '请使用预约时使用的电话号码，以验证身份',
+        statusSearchBtn: '查询状态',
+        statusSearching: '正在查询...',
+        statusRequiredError: '请填写预约编号和电话号码后4位',
+        statusNotFound: '未找到预约信息，请检查预约编号和电话号码。',
+        statusGenericError: '发生错误，请重试。',
+        statusContactName: '预约人姓名',
+        statusAppointmentDate: '预约日期',
+        statusAppointmentTime: '预约时间',
+        statusStep1: '确认报价',
+        statusStep2: '确认预约',
+        statusStep3: '技师处理中',
+        statusStep4: '验收完成'
       }
     };
 
@@ -959,7 +1171,6 @@
     const mapLocateBtn = document.getElementById('mapLocateBtn');
     const mapLocateBtnText = document.getElementById('mapLocateBtnText');
     const mapCoordsHint = document.getElementById('mapCoordsHint');
-    const shopAddressEl = document.getElementById('shopAddress');
     const reviewOverlay = document.getElementById('reviewOverlay');
     const reviewCardBody = document.getElementById('reviewCardBody');
     const reviewEditBtn = document.getElementById('reviewEditBtn');
@@ -992,7 +1203,7 @@
     });
 
     // ===== แผนที่ปักหมุดตำแหน่งร้าน/จุดที่ต้องการให้เข้าบริการ (Leaflet + OpenStreetMap) =====
-    // ค่าเริ่มต้น: ศูนย์กลางกรุงเทพฯ - ยังไม่ถือว่าลูกค้า "ปักหมุด" จนกว่าจะแตะแผนที่ / ลากหมุด / กดใช้ตำแหน่งปัจจุบัน / พิมพ์ที่อยู่แล้วค้นเจอ
+    // ค่าเริ่มต้น: ศูนย์กลางกรุงเทพฯ - ยังไม่ถือว่าลูกค้า "ปักหมุด" จนกว่าจะแตะแผนที่ / ลากหมุด / กดใช้ตำแหน่งปัจจุบัน
     const DEFAULT_MAP_CENTER = [13.7563, 100.5018];
     let selectedLat = null;
     let selectedLng = null;
@@ -1000,9 +1211,6 @@
     // ===== ใช้สำหรับ debounce + ยกเลิกผลลัพธ์เก่าของการค้นหาที่อยู่จากพิกัด (reverse geocoding) =====
     let reverseGeocodeTimer = null;
     let reverseGeocodeToken = 0;
-    // ===== ใช้สำหรับ debounce + ยกเลิกผลลัพธ์เก่าของการค้นหาพิกัดจากที่อยู่ที่พิมพ์ (forward geocoding) =====
-    let forwardGeocodeTimer = null;
-    let forwardGeocodeToken = 0;
 
     const locationMap = L.map('locationMap', { attributionControl: true }).setView(DEFAULT_MAP_CENTER, 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1012,9 +1220,7 @@
 
     const locationMarker = L.marker(DEFAULT_MAP_CENTER, { draggable: true }).addTo(locationMap);
 
-    // ===== skipReverseGeocode: true เมื่อพิกัดนี้มาจากการพิมพ์ที่อยู่เอง (forward geocode) =====
-    // กันไม่ให้ยิง reverse geocode ย้อนกลับไปเขียนทับข้อความที่ลูกค้าเพิ่งพิมพ์เอง
-    function setPickedLocation(lat, lng, recenter, skipReverseGeocode) {
+    function setPickedLocation(lat, lng, recenter) {
       selectedLat = lat;
       selectedLng = lng;
       hasPickedLocation = true;
@@ -1022,9 +1228,7 @@
       if (recenter) locationMap.setView([lat, lng], 16);
       updateMapCoordsHint();
       scheduleDraftSave();
-      if (!skipReverseGeocode) {
-        scheduleReverseGeocode_(lat, lng);
-      }
+      scheduleReverseGeocode_(lat, lng);
     }
 
     /**
@@ -1057,7 +1261,7 @@
           updateMapCoordsHint();
           const address = data && data.display_name;
           if (address) {
-            shopAddressEl.value = address;
+            document.getElementById('shopAddress').value = address;
             scheduleDraftSave();
           }
         })
@@ -1066,65 +1270,6 @@
           updateMapCoordsHint(); // ค้นหาที่อยู่ไม่สำเร็จ - เงียบๆ กลับไปโชว์พิกัดตามเดิม ลูกค้ากรอกที่อยู่เองได้
         });
     }
-
-    /**
-     * เว้นจังหวะก่อนยิงคำขอค้นหาพิกัดจากที่อยู่ที่พิมพ์ (forward geocoding)
-     * ยิงหลังจากลูกค้าหยุดพิมพ์ไปสักครู่ เพื่อไม่ให้ยิงคำขอทุกตัวอักษรที่พิมพ์
-     */
-    function scheduleForwardGeocode_() {
-      if (isApplyingDraft) return; // ไม่ยิงคำขอตอนกำลังกู้คืนร่างข้อมูล (ค่าจะถูกเติมตรงๆ อยู่แล้ว)
-      clearTimeout(forwardGeocodeTimer);
-      const address = shopAddressEl.value.trim();
-      if (!address) return;
-      forwardGeocodeTimer = setTimeout(function () {
-        geocodeAddressToPin_(address);
-      }, 900);
-    }
-
-    /**
-     * เรียก Nominatim (OpenStreetMap) ค้นหาพิกัดจากข้อความที่อยู่ แล้วย้ายหมุดบนแผนที่ไปตำแหน่งนั้นให้อัตโนมัติ
-     * ใช้ token กันผลลัพธ์เก่าเขียนทับค่าล่าสุด ถ้าผู้ใช้พิมพ์ที่อยู่ใหม่ระหว่างรอผลลัพธ์เดิม
-     */
-    function geocodeAddressToPin_(address) {
-      const t = I18N[currentLang];
-      const myToken = ++forwardGeocodeToken;
-      const langCode = currentLang === 'TH' ? 'th' : (currentLang === 'ZH' ? 'zh' : 'en');
-      mapCoordsHint.textContent = t.mapGeocoding;
-      mapCoordsHint.classList.remove('picked');
-      const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=0' +
-        '&accept-language=' + langCode + '&countrycodes=th&q=' + encodeURIComponent(address);
-      fetch(url, { headers: { 'Accept': 'application/json' } })
-        .then(function (res) { return res.json(); })
-        .then(function (results) {
-          if (myToken !== forwardGeocodeToken) return; // มีการพิมพ์ที่อยู่ใหม่ระหว่างรอ ไม่ใช้ผลลัพธ์นี้แล้ว
-          if (results && results.length > 0) {
-            const lat = parseFloat(results[0].lat);
-            const lng = parseFloat(results[0].lon);
-            if (!isNaN(lat) && !isNaN(lng)) {
-              // recenter=true เพื่อเลื่อนแผนที่ไปหาตำแหน่งที่เจอ, skipReverseGeocode=true กันเขียนทับข้อความที่พิมพ์เอง
-              setPickedLocation(lat, lng, true, true);
-              return;
-            }
-          }
-          // ไม่พบผลลัพธ์: แจ้งเตือนเบาๆ แล้วกลับไปโชว์คำแนะนำปกติ ลูกค้ายังปักหมุดเองได้เสมอ
-          mapCoordsHint.textContent = t.mapGeocodeNotFound;
-          setTimeout(function () {
-            if (myToken === forwardGeocodeToken) updateMapCoordsHint();
-          }, 2500);
-        })
-        .catch(function () {
-          if (myToken !== forwardGeocodeToken) return;
-          updateMapCoordsHint();
-        });
-    }
-
-    // พิมพ์ที่อยู่ -> ค้นหาพิกัดอัตโนมัติ (debounced ระหว่างพิมพ์ + ยิงทันทีอีกครั้งตอนออกจากช่อง)
-    shopAddressEl.addEventListener('input', scheduleForwardGeocode_);
-    shopAddressEl.addEventListener('blur', function () {
-      clearTimeout(forwardGeocodeTimer);
-      const address = shopAddressEl.value.trim();
-      if (address) geocodeAddressToPin_(address);
-    });
 
     function updateMapCoordsHint() {
       const t = I18N[currentLang];
@@ -1445,7 +1590,7 @@
       document.getElementById('lblContactName').textContent = t.contactName;
       document.getElementById('contactName').placeholder = t.contactNamePh;
       document.getElementById('lblShopAddress').textContent = t.shopAddress;
-      shopAddressEl.placeholder = t.shopAddressPh;
+      document.getElementById('shopAddress').placeholder = t.shopAddressPh;
       document.getElementById('lblMap').textContent = t.mapLabel;
       mapLocateBtnText.textContent = t.mapLocateBtn;
       updateMapCoordsHint();
@@ -1479,12 +1624,230 @@
       if (successOverlay.classList.contains('active')) {
         applySuccessLanguage_();
       }
+      // อัปเดตข้อความในหน้าตรวจสอบสถานะงานด้วย (รวมถึงผลลัพธ์ล่าสุดที่ค้นแล้ว ถ้ามี)
+      applyStatusLanguage_();
     }
 
     document.querySelectorAll('.lang-opt').forEach(function (btn) {
       btn.addEventListener('click', function () {
         applyLanguage(btn.getAttribute('data-lang'));
       });
+    });
+
+    // =========================================================================
+    // ===== หน้าตรวจสอบสถานะงาน (Status Check Page) =====
+    // ลูกค้ากรอกเลขที่การจอง + เบอร์โทร 4 ตัวท้าย เพื่อยืนยันตัวตนและดูความคืบหน้างาน
+    // เรียก Apps Script ด้วย action=checkBookingStatus แล้วแสดงผลเป็น stepper 4 ขั้นตอน
+    // =========================================================================
+    const statusCheckBtn = document.getElementById('statusCheckBtn');
+    const statusPageOverlay = document.getElementById('statusPageOverlay');
+    const statusBackBtn = document.getElementById('statusBackBtn');
+    const statusCheckForm = document.getElementById('statusCheckForm');
+    const statusBookingCodeEl = document.getElementById('statusBookingCode');
+    const statusPhoneLast4El = document.getElementById('statusPhoneLast4');
+    const statusSearchBtn = document.getElementById('statusSearchBtn');
+    const statusAlertBox = document.getElementById('statusAlertBox');
+    const statusResultCard = document.getElementById('statusResultCard');
+    const statusResultRows = document.getElementById('statusResultRows');
+    const statusStepsEl = document.getElementById('statusSteps');
+
+    // ผลลัพธ์ล่าสุดที่ค้นเจอ เก็บไว้เพื่อเรนเดอร์ใหม่ได้ทันทีถ้าลูกค้าสลับภาษาขณะดูผลอยู่
+    let lastStatusResult = null;
+
+    // 4 ขั้นตอนความคืบหน้าของงาน (คงที่ทุกประเภทบริการ) - ป้ายกำกับจะถูกดึงจาก I18N ตอนเรนเดอร์
+    const STATUS_STEP_KEYS = ['statusStep1', 'statusStep2', 'statusStep3', 'statusStep4'];
+
+    function openStatusPage_() {
+      statusPageOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      applyStatusLanguage_();
+    }
+
+    function closeStatusPage_() {
+      statusPageOverlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    statusCheckBtn.addEventListener('click', openStatusPage_);
+    statusBackBtn.addEventListener('click', closeStatusPage_);
+
+    // จำกัดให้กรอกเบอร์ 4 ตัวท้ายเป็นตัวเลขเท่านั้น
+    statusPhoneLast4El.addEventListener('input', function () {
+      statusPhoneLast4El.value = statusPhoneLast4El.value.replace(/\D/g, '').slice(0, 4);
+    });
+
+    function showStatusAlert_(type, message) {
+      statusAlertBox.className = 'alert ' + type;
+      statusAlertBox.textContent = message;
+      statusAlertBox.style.display = 'block';
+    }
+
+    function hideStatusAlert_() {
+      statusAlertBox.style.display = 'none';
+    }
+
+    /**
+     * อัปเดตข้อความคงที่ทั้งหมดของหน้าตรวจสอบสถานะงานตามภาษาปัจจุบัน
+     * และเรนเดอร์ผลลัพธ์ล่าสุดใหม่ (ถ้ามี) เพื่อให้ label/ป้ายขั้นตอนเปลี่ยนภาษาตามด้วย
+     */
+    function applyStatusLanguage_() {
+      const t = I18N[currentLang];
+      document.getElementById('statusCheckBtnText').textContent = t.statusCheckBtn;
+      document.getElementById('statusPageTitle').textContent = t.statusPageTitle;
+      document.getElementById('statusPageSubtitle').textContent = t.statusPageSubtitle;
+      document.getElementById('statusPageFooter').textContent = t.statusPageFooter;
+      document.getElementById('lblStatusBookingCode').textContent = t.statusBookingCode;
+      document.getElementById('lblStatusPhoneLast4').textContent = t.statusPhoneLast4;
+      document.getElementById('statusPhoneHint').textContent = t.statusPhoneHint;
+      if (!statusSearchBtn.disabled) {
+        statusSearchBtn.textContent = t.statusSearchBtn;
+      }
+      if (lastStatusResult) {
+        renderStatusResult_(lastStatusResult);
+      }
+    }
+
+    /**
+     * เรนเดอร์แถวข้อมูลสรุป + stepper ความคืบหน้า จากผลลัพธ์ที่ backend ส่งกลับมา
+     * res ที่คาดหวัง: { contactName, serviceTypes: [...], fulfillmentType, bookingDate, bookingTime, statusStep: 1-4 }
+     */
+    function renderStatusResult_(res) {
+      const lang = currentLang;
+      const t = I18N[lang];
+
+      const rows = [];
+      if (res.contactName) rows.push({ label: t.statusContactName, value: res.contactName });
+
+      const serviceLabel = (res.serviceTypes || []).map(function (v) {
+        const m = SERVICE_TYPES.find(function (s) { return s.value === v; });
+        return m ? m.label[lang] : v;
+      }).join(' + ');
+      if (serviceLabel) rows.push({ label: t.serviceType, value: serviceLabel });
+
+      const fm = FULFILLMENT_TYPES.find(function (f) { return f.value === res.fulfillmentType; });
+      if (fm) rows.push({ label: t.fulfillment, value: fm.label[lang] });
+
+      if (res.bookingDate) rows.push({ label: t.statusAppointmentDate, value: formatDateDisplay_(res.bookingDate, lang) });
+      if (res.bookingTime) rows.push({ label: t.statusAppointmentTime, value: res.bookingTime + t.timeSuffix });
+
+      statusResultRows.innerHTML = '';
+      rows.forEach(function (r) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'status-result-row';
+        const lbl = document.createElement('div');
+        lbl.className = 'rlabel';
+        lbl.textContent = r.label;
+        const val = document.createElement('div');
+        val.className = 'rvalue';
+        val.textContent = r.value;
+        rowEl.appendChild(lbl);
+        rowEl.appendChild(val);
+        statusResultRows.appendChild(rowEl);
+      });
+
+      // ===== เรนเดอร์ stepper 4 ขั้นตอน: 3 ขั้นแรกเป็นวงกลม ขั้นสุดท้าย (ตรวจรับงาน) เป็นกล่องสี่เหลี่ยม =====
+      const rawStep = Number(res.statusStep);
+      const currentStep = (rawStep >= 1 && rawStep <= 4) ? rawStep : 1;
+
+      statusStepsEl.innerHTML = '';
+      STATUS_STEP_KEYS.forEach(function (key, idx) {
+        const stepNum = idx + 1;
+        const isLast = stepNum === 4;
+        const isDone = stepNum < currentStep;
+        const isCurrent = stepNum === currentStep;
+        const isFinalDone = isLast && stepNum <= currentStep && (isDone || (isCurrent && currentStep === 4));
+
+        const stepEl = document.createElement('div');
+        stepEl.className = 'status-step';
+
+        const iconCol = document.createElement('div');
+        iconCol.className = 'status-step-icon-col';
+
+        const iconEl = document.createElement('div');
+        iconEl.className = 'status-step-icon' + (isLast ? ' checkbox' : '');
+        if (isLast) {
+          iconEl.classList.add(isFinalDone ? 'done-final' : 'pending');
+        } else if (isDone) {
+          iconEl.classList.add('done');
+        } else if (isCurrent) {
+          iconEl.classList.add('current');
+        } else {
+          iconEl.classList.add('pending');
+        }
+
+        // ไอคอนภายในวงกลม/กล่อง: เครื่องหมายถูก (เสร็จแล้ว) หรือนาฬิกาทราย (กำลังดำเนินการ) หรือว่างไว้ (ยังไม่ถึง)
+        if (isLast) {
+          if (isFinalDone) {
+            iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13l4 4L19 7" stroke="#2ecc71" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          }
+        } else if (isDone) {
+          iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        } else if (isCurrent) {
+          iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="2"/><path d="M12 7v5l3.5 2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+
+        iconCol.appendChild(iconEl);
+        if (!isLast) {
+          const lineEl = document.createElement('div');
+          lineEl.className = 'status-step-line' + (isDone ? ' done' : '');
+          iconCol.appendChild(lineEl);
+        }
+
+        const bodyEl = document.createElement('div');
+        bodyEl.className = 'status-step-body';
+        const labelEl = document.createElement('div');
+        labelEl.className = 'status-step-label' + (isDone ? ' done' : (isCurrent ? ' current' : ''));
+        labelEl.textContent = t[key];
+        bodyEl.appendChild(labelEl);
+
+        stepEl.appendChild(iconCol);
+        stepEl.appendChild(bodyEl);
+        statusStepsEl.appendChild(stepEl);
+      });
+
+      statusResultCard.classList.add('active');
+    }
+
+    statusCheckForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      hideStatusAlert_();
+      statusResultCard.classList.remove('active');
+      lastStatusResult = null;
+
+      const t = I18N[currentLang];
+      const bookingCode = statusBookingCodeEl.value.trim();
+      const phoneLast4 = statusPhoneLast4El.value.trim();
+
+      if (!bookingCode || phoneLast4.length !== 4) {
+        showStatusAlert_('error', t.statusRequiredError);
+        return;
+      }
+
+      statusSearchBtn.disabled = true;
+      statusSearchBtn.innerHTML = '<span class="spinner"></span>' + t.statusSearching;
+
+      const url = APPS_SCRIPT_URL + '?action=checkBookingStatus&bookingCode=' + encodeURIComponent(bookingCode) +
+        '&phoneLast4=' + encodeURIComponent(phoneLast4);
+
+      fetch(url)
+        .then(function (res) { return res.json(); })
+        .then(function (res) {
+          const t2 = I18N[currentLang];
+          statusSearchBtn.disabled = false;
+          statusSearchBtn.textContent = t2.statusSearchBtn;
+          if (res && res.success) {
+            lastStatusResult = res;
+            renderStatusResult_(res);
+          } else {
+            showStatusAlert_('error', (res && res.message) ? res.message : t2.statusNotFound);
+          }
+        })
+        .catch(function () {
+          const t2 = I18N[currentLang];
+          statusSearchBtn.disabled = false;
+          statusSearchBtn.textContent = t2.statusSearchBtn;
+          showStatusAlert_('error', t2.statusGenericError);
+        });
     });
 
     function refreshAvailableSlots(forcedPreviousTime) {
@@ -1652,7 +2015,7 @@
         serviceTypesLabeled: serviceTypesLabeled, // ===== หัวข้อบริการ + รหัสแผนก สำหรับ Sheet/Email =====
         departmentCodes: departmentCodes,          // ===== รหัสแผนกล้วนๆ เช่น ["OP","PJ"] =====
         contactName: document.getElementById('contactName').value.trim(),
-        shopAddress: shopAddressEl.value.trim(),
+        shopAddress: document.getElementById('shopAddress').value.trim(),
         // ===== พิกัดที่ลูกค้าปักหมุดไว้บนแผนที่ (ถ้ามี) - ใช้แปลงเป็นลิงก์ Google Maps ฝั่งหลังบ้าน =====
         mapLat: hasPickedLocation && selectedLat !== null ? selectedLat.toFixed(6) : '',
         mapLng: hasPickedLocation && selectedLng !== null ? selectedLng.toFixed(6) : '',
@@ -2183,7 +2546,7 @@
       isApplyingDraft = true;
       try {
         if (data.contactName) document.getElementById('contactName').value = data.contactName;
-        if (data.shopAddress) shopAddressEl.value = data.shopAddress;
+        if (data.shopAddress) document.getElementById('shopAddress').value = data.shopAddress;
         if (data.kitchenInfo) document.getElementById('kitchenInfo').value = data.kitchenInfo;
         if (data.phone) document.getElementById('phone').value = data.phone;
         if (data.customerEmail) document.getElementById('customerEmail').value = data.customerEmail;
@@ -2230,7 +2593,7 @@
         if (data.mapLat && data.mapLng) {
           const lat = parseFloat(data.mapLat);
           const lng = parseFloat(data.mapLng);
-          if (!isNaN(lat) && !isNaN(lng)) setPickedLocation(lat, lng, true, true);
+          if (!isNaN(lat) && !isNaN(lng)) setPickedLocation(lat, lng, true);
         }
 
         // วันที่/เวลานัด: คืนค่าได้เฉพาะวันที่ยังไม่ผ่านไป (กันกรณีร่างเก่าเลือกวันที่ล่วงเลยมาแล้ว)
