@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบจองคิว</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+  <style>
+    :root{
+      --black:#0d0d0d; --black-soft:#1a1a1a; --red:#c81e2c; --red-soft:#e8384a;
+      --white:#ffffff; --gray:#9a9a9a; --border:rgba(255,255,255,0.08);
+    }
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    body{
+      font-family:'Kanit', sans-serif; min-height:100vh;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(200,30,44,0.35), transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(200,30,44,0.25), transparent 45%),
+        linear-gradient(160deg, #050505 0%, #161616 45%, #0a0a0a 100%);
+      color:var(--white); display:flex; justify-content:center; align-items:flex-start; padding:40px 16px;
+    }
+    .container{ width:100%; max-width:640px; position:relative; }
+    .lang-switch{
+      position:absolute; top:0; right:0; z-index:5;
+      display:flex; gap:4px;
+      background:rgba(255,255,255,0.06); border:1px solid var(--border);
+      border-radius:999px; padding:4px;
+    }
+    .lang-switch .lang-opt{
+      background:transparent; border:none; color:var(--gray);
+      font-family:'Kanit', sans-serif; font-size:12px; font-weight:500;
+      padding:6px 12px; border-radius:999px; cursor:pointer; letter-spacing:0.3px;
+      transition:background .2s, color .2s;
+    }
+    .lang-switch .lang-opt:hover:not(.active){ background:rgba(200,30,44,0.15); color:var(--white); }
+    .lang-switch .lang-opt.active{ background:linear-gradient(90deg, var(--red), var(--red-soft)); color:#fff; }
+    .header{ text-align:center; margin-bottom:28px; padding-top:4px; }
+    .header .badge{
+      display:inline-block; padding:6px 18px; border-radius:999px;
+      background:linear-gradient(90deg, var(--red), var(--red-soft));
+      font-size:12px; letter-spacing:2px; font-weight:500; margin-bottom:14px;
+    }
+    .header h1{
+      font-size:34px; font-weight:700;
+      background:linear-gradient(90deg, #ffffff 0%, #ff8a93 45%, var(--red) 100%);
+      -webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:0.5px;
+    }
+    .header p{ color:var(--gray); font-size:14px; margin-top:8px; font-weight:300; }
+    .card{
+      background:linear-gradient(160deg, rgba(26,26,26,0.9), rgba(13,13,13,0.95));
+      border:1px solid var(--border); border-radius:20px; padding:32px 28px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+      backdrop-filter:blur(10px);
+    }
+    .field{ margin-bottom:20px; }
+    .field label{ display:block; font-size:13px; font-weight:500; color:var(--gray); margin-bottom:8px; letter-spacing:0.3px; }
+    .field label .req{ color:var(--red-soft); margin-left:2px; }
+    .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    input[type="text"], input[type="tel"], textarea, select{
+      width:100%; background:#141414; border:1px solid var(--border); color:var(--white);
+      font-family:'Kanit', sans-serif; font-size:15px; padding:12px 14px; border-radius:10px;
+      outline:none; transition:border-color .2s, box-shadow .2s;
+    }
+    textarea{ resize:vertical; min-height:70px; }
+    input:focus, textarea:focus, select:focus{ border-color:var(--red-soft); box-shadow:0 0 0 3px rgba(200,30,44,0.2); }
+    select:disabled, input:disabled{ opacity:0.45; cursor:not-allowed; }
+    select{
+      -webkit-appearance:none; appearance:none;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9a9a' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+      background-repeat:no-repeat; background-position:right 14px center; padding-right:38px;
+    }
+    /* ===== Checkbox group สำหรับเลือกประเภทบริการ (เลือกได้หลายอัน) - แสดงเป็น grid 2 คอลัมน์ =====
+       ใช้เทคนิค hanging indent: วงกลม (input) วางแบบ absolute ไว้มุมซ้ายบน ส่วนข้อความ (span) เป็น block ปกติ
+       ที่มี padding-left คงที่เท่ากัน ทำให้ถ้าข้อความยาวจนต้องขึ้นบรรทัดใหม่ บรรทัดที่ 2 จะชิดขอบเดียวกับบรรทัดแรก
+       (ไม่ไหลไปอยู่ใต้วงกลมเหมือนก่อนหน้านี้) ===== */
+    .checkbox-group{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .checkbox-item{
+      position:relative; display:block; background:#141414; border:1px solid var(--border);
+      border-radius:10px; padding:14px 16px 14px 44px; cursor:pointer; transition:border-color .2s, background .2s;
+    }
+    .checkbox-item:hover{ border-color:var(--red-soft); background:rgba(200,30,44,0.06); }
+    .checkbox-item input[type="checkbox"]{
+      -webkit-appearance:none; appearance:none;
+      width:20px; height:20px; border-radius:50%;
+      border:2px solid rgba(255,255,255,0.28); background:#0d0d0d;
+      cursor:pointer; position:absolute; left:16px; top:50%; transform:translateY(-50%); margin:0; padding:0;
+      transition:border-color .2s, background .2s;
+    }
+    .checkbox-item input[type="checkbox"]:hover{ border-color:var(--red-soft); }
+    .checkbox-item input[type="checkbox"]:checked{
+      background:var(--red-soft); border-color:var(--red-soft);
+    }
+    .checkbox-item input[type="checkbox"]:checked::after{
+      content:''; position:absolute; left:50%; top:44%;
+      width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0;
+      transform:translate(-50%,-50%) rotate(45deg);
+    }
+    .checkbox-item span{ display:block; font-size:14.5px; color:var(--white); line-height:1.4; }
+    .checkbox-item.checked{ border-color:var(--red-soft); background:rgba(200,30,44,0.1); }
+    /* หัวข้อคั่นกลุ่มฟิลด์เพิ่มเติมของแต่ละบริการที่ติ๊กไว้ */
+    .service-group-title{
+      display:flex; align-items:center; gap:8px;
+      font-size:12.5px; font-weight:600; color:#ff8a93; letter-spacing:0.3px;
+      margin:18px 0 12px 0; padding-bottom:8px; border-bottom:1px solid var(--border);
+    }
+    .service-group-title:before{ content:'▸'; color:var(--red-soft); font-size:13px; }
+    .file-drop{
+      border:1.5px dashed var(--border); border-radius:12px; padding:18px; text-align:center;
+      cursor:pointer; color:var(--gray); font-size:13px; transition:border-color .2s, background .2s; position:relative;
+    }
+    .file-drop:hover{ border-color:var(--red-soft); background:rgba(200,30,44,0.06); }
+    .file-drop input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .file-drop.has-file{ border-color:var(--red-soft); color:var(--white); }
+    /* ===== Preview รูปที่เลือกไว้หลายรูป (thumbnail grid + ปุ่มลบ) ===== */
+    .image-preview-list{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+    .image-preview-item{
+      position:relative; width:84px; height:84px; border-radius:10px; overflow:hidden;
+      border:1px solid var(--border); flex-shrink:0;
+    }
+    .image-preview-item img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .image-preview-item .remove-btn{
+      position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%;
+      background:rgba(0,0,0,0.65); color:#fff; border:none; font-size:12px; line-height:20px;
+      text-align:center; cursor:pointer; padding:0; font-family:'Kanit', sans-serif;
+    }
+    .image-preview-item .remove-btn:hover{ background:var(--red); }
+    .slot-hint{ font-size:12px; color:var(--gray); margin-top:6px; }
+    /* ===== ฟิลด์แผนที่: ปักหมุดตำแหน่งร้าน/จุดที่ต้องการให้เข้าบริการ ===== */
+    .map-field-wrap{ margin-bottom:20px; }
+    .map-container{
+      width:100%; height:230px; border-radius:12px; overflow:hidden;
+      border:1px solid var(--border); background:#141414;
+    }
+    .map-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px; flex-wrap:wrap; }
+    .map-locate-btn{
+      display:inline-flex; align-items:center; gap:6px; background:#141414; border:1px solid var(--border);
+      color:var(--white); font-family:'Kanit', sans-serif; font-size:12.5px; font-weight:500;
+      padding:8px 14px; border-radius:999px; cursor:pointer; transition:border-color .2s, background .2s;
+    }
+    .map-locate-btn:hover{ border-color:var(--red-soft); background:rgba(200,30,44,0.1); }
+    .map-locate-btn svg{ width:14px; height:14px; flex-shrink:0; }
+    .map-coords-hint{ font-size:12px; color:var(--gray); }
+    .map-coords-hint.picked{ color:#7be6a5; }
+    /* Leaflet dark-map polish so it blends with the card */
+    .leaflet-container{ background:#141414; font-family:'Kanit', sans-serif; }
+    .leaflet-control-attribution{ background:rgba(13,13,13,0.75) !important; color:#8a8a8a !important; font-size:9.5px !important; }
+    .leaflet-control-attribution a{ color:#b0b0b0 !important; }
+    .leaflet-control-zoom a{ background:#141414 !important; color:#fff !important; border-color:var(--border) !important; }
+    .leaflet-control-zoom a:hover{ background:#1f1f1f !important; }
+    .submit-btn{
+      width:100%; padding:14px; border:none; border-radius:12px;
+      background:linear-gradient(90deg, var(--red) 0%, var(--red-soft) 100%);
+      color:var(--white); font-family:'Kanit', sans-serif; font-size:16px; font-weight:600;
+      letter-spacing:0.5px; cursor:pointer; margin-top:8px;
+      transition:transform .15s, box-shadow .15s, opacity .15s; box-shadow:0 10px 30px rgba(200,30,44,0.35);
+    }
+    .submit-btn:hover{ transform:translateY(-1px); box-shadow:0 14px 34px rgba(200,30,44,0.45); }
+    .submit-btn:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
+    .alert{ display:none; padding:12px 14px; border-radius:10px; font-size:14px; margin-bottom:18px; font-weight:400; line-height:1.5; }
+    .alert.success{ background:rgba(46,204,113,0.12); border:1px solid rgba(46,204,113,0.4); color:#7be6a5; }
+    .alert.error{ background:rgba(200,30,44,0.12); border:1px solid rgba(200,30,44,0.5); color:#ff8a93; }
+    /* ===== แถบแจ้งเตือน "พบร่างข้อมูลที่ยังไม่เสร็จ" (บันทึกอัตโนมัติด้วย localStorage) ===== */
+    .draft-banner{
+      display:none; background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.35);
+      border-radius:10px; padding:14px 16px; margin-bottom:18px; gap:12px;
+      align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    .draft-banner.active{ display:flex; }
+    .draft-banner-text{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:180px; }
+    .draft-banner-text span:first-child{ color:#bcd2ff; font-size:13.5px; font-weight:600; }
+    .draft-banner-sub{ color:#8aa5d8; font-size:11.5px; }
+    .draft-banner-actions{ display:flex; gap:8px; flex-shrink:0; }
+    .draft-banner-actions button{
+      font-family:'Kanit', sans-serif; font-size:12.5px; font-weight:600; padding:8px 14px;
+      border-radius:8px; cursor:pointer; border:1px solid transparent; transition:background .2s, border-color .2s, color .2s;
+    }
+    #draftRestoreBtn{ background:#2563eb; color:#fff; }
+    #draftRestoreBtn:hover{ background:#1d4ed8; }
+    #draftDiscardBtn{ background:transparent; border-color:rgba(255,255,255,0.15); color:#9a9a9a; }
+    #draftDiscardBtn:hover{ border-color:var(--red-soft); color:#ff8a93; }
+    @media (max-width:480px){
+      .draft-banner{ flex-direction:column; align-items:stretch; }
+      .draft-banner-actions{ justify-content:flex-end; }
+    }
+    .footer-note{ text-align:center; color:var(--gray); font-size:12px; margin-top:22px; font-weight:300; }
+    .info-box{
+      background:rgba(200,30,44,0.08); border:1px solid rgba(200,30,44,0.3); border-radius:10px;
+      padding:14px 16px; font-size:13.5px; color:#e8e8e8; line-height:1.6;
+    }
+    .info-box .info-title{ color:#ff8a93; font-weight:600; font-size:12px; letter-spacing:0.3px; margin-bottom:6px; }
+    /* ===== หน้าสรุปก่อนยืนยันการจอง (review step) ===== */
+    .review-overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+      z-index:1000; display:none; align-items:center; justify-content:center; padding:20px;
+    }
+    .review-overlay.active{ display:flex; }
+    .review-card{
+      background:linear-gradient(160deg, rgba(26,26,26,0.97), rgba(13,13,13,0.98));
+      border:1px solid var(--border); border-radius:20px; padding:26px 24px;
+      max-width:520px; width:100%; max-height:85vh; overflow-y:auto;
+      box-shadow:0 25px 70px rgba(0,0,0,0.65);
+    }
+    .review-title{ font-size:19px; font-weight:700; color:#fff; margin-bottom:4px; }
+    .review-subtitle{ font-size:13px; color:var(--gray); margin-bottom:16px; line-height:1.5; }
+    .review-row{
+      display:flex; justify-content:space-between; align-items:flex-start; gap:14px;
+      padding:11px 0; border-bottom:1px solid var(--border); font-size:13.5px;
+    }
+    .review-row:last-child{ border-bottom:none; }
+    .review-row .rlabel{ color:var(--gray); flex-shrink:0; width:42%; line-height:1.4; }
+    .review-row .rvalue{ color:#fff; font-weight:500; text-align:right; word-break:break-word; line-height:1.4; flex:1; }
+    .review-images{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; flex:1; }
+    .review-images img{ width:42px; height:42px; object-fit:cover; border-radius:6px; border:1px solid var(--border); }
+    .review-actions{ display:flex; gap:10px; margin-top:20px; }
+    .review-actions button{
+      flex:1; padding:13px; border-radius:10px; font-family:'Kanit', sans-serif;
+      font-size:14.5px; font-weight:600; cursor:pointer; border:none; transition:transform .15s, opacity .15s;
+    }
+    .review-edit-btn{ background:#1a1a1a; border:1px solid var(--border) !important; color:#fff; }
+    .review-edit-btn:hover{ border-color:var(--red-soft) !important; background:rgba(200,30,44,0.08); }
+    .review-confirm-btn{
+      background:linear-gradient(90deg, var(--red) 0%, var(--red-soft) 100%); color:#fff;
+      box-shadow:0 10px 24px rgba(200,30,44,0.35);
+    }
+    .review-confirm-btn:hover{ transform:translateY(-1px); }
+    .review-confirm-btn:disabled{ opacity:0.55; cursor:not-allowed; transform:none; }
+    @media (max-width:480px){
+      .review-card{ padding:20px 18px; max-height:88vh; }
+      .review-row{ flex-direction:column; gap:3px; }
+      .review-row .rvalue{ text-align:left; }
+      .review-images{ justify-content:flex-start; }
+    }
+
+    /* ===== ปุ่มลอย LINE OA มุมขวาล่าง ===== */
+    .line-float-btn{
+      position:fixed; right:20px; bottom:20px; z-index:999;
+      width:58px; height:58px; border-radius:50%;
+      background:#06C755; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 8px 24px rgba(6,199,85,0.45), 0 2px 8px rgba(0,0,0,0.3);
+      text-decoration:none; transition:transform .2s, box-shadow .2s;
+      animation:lineFloatPulse 2.4s ease-in-out infinite;
+    }
+    .line-float-btn:hover{ transform:translateY(-2px) scale(1.05); box-shadow:0 12px 30px rgba(6,199,85,0.55), 0 2px 8px rgba(0,0,0,0.3); }
+    .line-float-btn svg{ width:30px; height:30px; }
+    @keyframes lineFloatPulse{
+      0%, 100%{ box-shadow:0 8px 24px rgba(6,199,85,0.45), 0 0 0 0 rgba(6,199,85,0.5); }
+      50%{ box-shadow:0 8px 24px rgba(6,199,85,0.45), 0 0 0 6px rgba(6,199,85,0); }
+    }
+    /* ===== ปุ่มลอยแชทสด (Tawk.to) มุมขวาล่าง วางซ้อนเหนือปุ่ม LINE =====
+       ใช้ widget ของตัวเองแทน bubble เริ่มต้นของ Tawk (ถูกซ่อนถาวรด้วย CSS ด้านล่าง + JS hideWidget()) */
+    .chat-float-btn{
+      position:fixed; right:20px; bottom:100px; z-index:999;
+      width:58px; height:58px; border-radius:50%; border:none; padding:0;
+      background:#2563eb; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 8px 24px rgba(37,99,235,0.45), 0 2px 8px rgba(0,0,0,0.3);
+      cursor:pointer; transition:transform .2s, box-shadow .2s;
+    }
+    .chat-float-btn:hover{ transform:translateY(-2px) scale(1.05); box-shadow:0 12px 30px rgba(37,99,235,0.55), 0 2px 8px rgba(0,0,0,0.3); }
+    .chat-float-btn svg{ width:28px; height:28px; }
+    /* ===== ซ่อน widget เริ่มต้นของ Tawk.to แบบถาวรด้วย CSS (กันปุ่มแดงเริ่มต้นโผล่มาซ้อนปุ่มที่สร้างเอง) =====
+       ทำงานทันทีที่ CSS โหลด ไม่ต้องรอ JS ของ Tawk โหลดเสร็จก่อน จึงกันปัญหา "โผล่มาแวบนึงก่อนถูกซ่อน" ได้ */
+    #tawkchat-container, .tawk-min-container, iframe[title="chat widget"]{
+      visibility:hidden !important;
+      opacity:0 !important;
+      pointer-events:none !important;
+    }
+    @media (max-width:480px){
+      .grid-2{ grid-template-columns:1fr; }
+      .checkbox-group{ grid-template-columns:1fr; }
+      .header h1{ font-size:27px; }
+      .card{ padding:24px 18px; border-radius:16px; }
+      .lang-switch{ position:static; display:inline-flex; margin-bottom:14px; }
+      .line-float-btn{ right:14px; bottom:14px; width:52px; height:52px; }
+      .line-float-btn svg{ width:27px; height:27px; }
+      .chat-float-btn{ right:14px; bottom:82px; width:52px; height:52px; }
+      .chat-float-btn svg{ width:25px; height:25px; }
+      .map-container{ height:200px; }
+    }
+    .flatpickr-calendar{ background:#141414; border:1px solid var(--border); box-shadow:0 20px 50px rgba(0,0,0,0.6); font-family:'Kanit', sans-serif; }
+    .flatpickr-calendar.arrowTop:before, .flatpickr-calendar.arrowTop:after{ display:none; }
+    .flatpickr-months{ background:#141414; }
+    .flatpickr-current-month{ color:var(--white); font-family:'Kanit', sans-serif; }
+    .flatpickr-current-month input.cur-year{ color:var(--white); }
+    .flatpickr-monthDropdown-months{ background:#141414; color:var(--white); }
+    .flatpickr-weekday{ background:#141414; color:var(--gray); }
+    .flatpickr-day{ color:var(--white); }
+    .flatpickr-day.flatpickr-disabled{ color:#4a4a4a; }
+    .flatpickr-day.today{ border-color:var(--red-soft); }
+    .flatpickr-day.selected, .flatpickr-day.selected:hover{ background:var(--red); border-color:var(--red); }
+    .flatpickr-day:hover{ background:rgba(200,30,44,0.25); }
+    .flatpickr-prev-month svg, .flatpickr-next-month svg{ fill:var(--gray); }
+    .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg{ fill:var(--red-soft); }
+    .spinner{
+      display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.4);
+      border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite;
+      vertical-align:middle; margin-right:8px;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="lang-switch" id="langSwitch">
+      <button type="button" class="lang-opt" data-lang="TH">ไทย</button>
+      <button type="button" class="lang-opt" data-lang="EN">EN</button>
+      <button type="button" class="lang-opt" data-lang="ZH">中文</button>
+    </div>
+
+    <div class="header">
+      <span class="badge" id="badgeText">ระบบจองคิว</span>
+      <h1 id="pageTitle">ระบบจองคิว</h1>
+      <p id="pageSubtitle">กรอกข้อมูลเพื่อทำการจองคิวบริการ</p>
+    </div>
+
+    <div class="card">
+      <!-- ===== แถบแจ้งเตือนถ้าพบร่างข้อมูลเดิมที่บันทึกไว้อัตโนมัติ (localStorage) - โผล่ก่อนฟอร์มเสมอถ้ามี ===== -->
+      <div class="draft-banner" id="draftBanner">
+        <div class="draft-banner-text">
+          <span id="draftBannerTitle">พบร่างข้อมูลที่ยังไม่เสร็จ</span>
+          <span class="draft-banner-sub" id="draftBannerSub"></span>
+        </div>
+        <div class="draft-banner-actions">
+          <button type="button" id="draftRestoreBtn">กู้คืนข้อมูล</button>
+          <button type="button" id="draftDiscardBtn">ทิ้งร่างนี้</button>
+        </div>
+      </div>
+
+      <div id="alertBox" class="alert"></div>
+
+      <form id="bookingForm">
+        <div class="field">
+          <label><span id="lblServiceType">ประเภทบริการ</span><span class="req">*</span></label>
+          <div class="checkbox-group" id="serviceTypeGroup"></div>
+        </div>
+
+        <div id="dynamicFields"></div>
+
+        <div class="field">
+          <label><span id="lblFulfillment">บริการที่ต้องการ</span><span class="req">*</span></label>
+          <select id="fulfillmentType">
+            <option value="">-- เลือกบริการที่ต้องการ --</option>
+          </select>
+        </div>
+
+        <div id="fulfillmentFields"></div>
+
+        <div class="field">
+          <label><span id="lblContactName">ชื่อผู้ติดต่อ</span><span class="req">*</span></label>
+          <input type="text" id="contactName" required>
+        </div>
+
+        <div class="field">
+          <label id="lblShopAddress">ที่อยู่ของร้าน</label>
+          <textarea id="shopAddress"></textarea>
+        </div>
+
+        <!-- ===== ฟิลด์แผนที่: ให้ลูกค้าปักหมุดตำแหน่งร้าน/จุดที่ต้องการให้เข้าบริการ =====
+             ใช้ Leaflet + OpenStreetMap (ไม่ต้องใช้ Google Maps API key)
+             พิกัดที่ได้ (lat/lng) จะถูกส่งไปพร้อมฟอร์ม แล้วแปลงเป็นลิงก์ Google Maps นำทางในอีเมลแจ้งทีมงาน ===== -->
+        <div class="field map-field-wrap">
+          <label><span id="lblMap">ปักหมุดตำแหน่งร้าน (แผนที่)</span></label>
+          <div class="map-container" id="locationMap"></div>
+          <div class="map-toolbar">
+            <button type="button" class="map-locate-btn" id="mapLocateBtn">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#ff8a93" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="12" cy="12" r="5" stroke="#ff8a93" stroke-width="2"/>
+              </svg>
+              <span id="mapLocateBtnText">ใช้ตำแหน่งปัจจุบันของฉัน</span>
+            </button>
+            <span class="map-coords-hint" id="mapCoordsHint"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label id="lblKitchenInfo">ข้อมูลเครื่องครัว</label>
+          <textarea id="kitchenInfo"></textarea>
+        </div>
+
+        <div class="field">
+          <label><span id="lblPhone">เบอร์ติดต่อ</span><span class="req">*</span></label>
+          <input type="tel" id="phone" placeholder="0XX-XXX-XXXX" required>
+        </div>
+
+        <div class="field">
+          <label id="lblEmail">อีเมล (สำหรับส่งใบยืนยันการจอง)</label>
+          <input type="text" id="customerEmail" placeholder="example@email.com">
+        </div>
+
+        <div class="field">
+          <label id="lblImage">รูปภาพ</label>
+          <div class="file-drop" id="fileDrop">
+            <span id="fileDropText">คลิกเพื่อเลือกรูปภาพ หรือ ลากไฟล์มาวางที่นี่ (เลือกได้หลายรูป)</span>
+            <input type="file" id="imageInput" accept="image/*" multiple>
+          </div>
+          <div id="imagePreviewList" class="image-preview-list"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label><span id="lblDate">ปฏิทินเลือกวัน</span><span class="req">*</span></label>
+            <input type="text" id="bookingDate" autocomplete="off" readonly>
+          </div>
+
+          <div class="field">
+            <label><span id="lblTime">เวลาที่ต้องการให้เข้าซ่อม</span><span class="req">*</span></label>
+            <select id="bookingTime" disabled>
+              <option value="">เลือกบริการและวันที่ก่อน</option>
+            </select>
+            <div class="slot-hint" id="slotHint"></div>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">ยืนยันการจอง</button>
+      </form>
+    </div>
+
+    <p class="footer-note" id="footerNote">เปิดให้จองเวลา 08:00 - 17:30 น. เท่านั้น</p>
+  </div>
+
+  <!-- ===== หน้าสรุปก่อนยืนยันการจอง (review step) =====
+       โผล่ขึ้นหลังลูกค้ากรอกครบและกด "ยืนยันการจอง" ครั้งแรก ให้ตรวจทานข้อมูลอีกครั้งก่อนส่งจริง
+       กด "แก้ไขข้อมูล" เพื่อปิด modal กลับไปแก้ในฟอร์ม หรือกด "ยืนยันการจอง" อีกครั้งเพื่อส่งข้อมูลจริง ===== -->
+  <div class="review-overlay" id="reviewOverlay">
+    <div class="review-card">
+      <div class="review-title" id="reviewTitle">ตรวจสอบข้อมูลก่อนยืนยัน</div>
+      <div class="review-subtitle" id="reviewSubtitle">กรุณาตรวจสอบข้อมูลให้ถูกต้อง เนื่องจากไม่สามารถแก้ไขได้หลังยืนยันการจอง</div>
+      <div id="reviewCardBody"></div>
+      <div class="review-actions">
+        <button type="button" class="review-edit-btn" id="reviewEditBtn">แก้ไขข้อมูล</button>
+        <button type="button" class="review-confirm-btn" id="reviewConfirmBtn">ยืนยันการจอง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ปุ่มลอย LINE OA มุมขวาล่าง กดแล้วเปิดแชท LINE OA ทันที =====
+       *** แก้ลิงก์ตรงนี้ให้เป็นลิงก์ LINE OA จริงของร้าน เช่น https://line.me/R/ti/p/@your_line_id *** -->
+  <a href="https://lin.ee/y7u2oYH" target="_blank" rel="noopener" class="line-float-btn" id="lineFloatBtn" aria-label="Chat on LINE">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
+      <path d="M12 3C6.48 3 2 6.69 2 11.2c0 4.03 3.58 7.4 8.42 8.05.33.07.77.22.88.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1 .88.55 1.08-.46 5.8-3.42 7.92-5.86C21.5 14.5 22 12.9 22 11.2 22 6.69 17.52 3 12 3z" fill="#ffffff"/>
+      <path d="M9.2 9.3h-.9a.2.2 0 00-.2.2v4.1c0 .11.09.2.2.2h.9c.11 0 .2-.09.2-.2V9.5a.2.2 0 00-.2-.2z" fill="#06C755"/>
+      <path d="M13.9 9.3h-.9a.2.2 0 00-.2.2v2.44l-1.88-2.54a.2.2 0 00-.03-.04l-.01-.01-.02-.02h-.01l-.02-.01h-.01l-.02-.01h-1a.2.2 0 00-.2.2v4.1c0 .11.09.2.2.2h.9c.11 0 .2-.09.2-.2v-2.44l1.88 2.54c.03.04.06.06.1.08h.01l.02.01h.05c.02 0 .03.01.05.01h.89c.11 0 .2-.09.2-.2V9.5a.2.2 0 00-.2-.2z" fill="#06C755"/>
+      <path d="M7.1 12.9h-1.6V9.5a.2.2 0 00-.2-.2h-.9a.2.2 0 00-.2.2v4.1c0 .05.02.1.06.14.04.04.09.06.14.06h2.7c.11 0 .2-.09.2-.2v-.5a.2.2 0 00-.2-.2z" fill="#06C755"/>
+      <path d="M18.1 10.6c.11 0 .2-.09.2-.2v-.9a.2.2 0 00-.2-.2h-2.7a.2.2 0 00-.14.06.2.2 0 00-.06.14v4.1c0 .05.02.1.06.14.04.04.09.06.14.06h2.7c.11 0 .2-.09.2-.2v-.9a.2.2 0 00-.2-.2h-1.6v-.69h1.6c.11 0 .2-.09.2-.2v-.9a.2.2 0 00-.2-.2h-1.6v-.71h1.6z" fill="#06C755"/>
+    </svg>
+  </a>
+
+  <!-- ===== ปุ่มลอยแชทสด (Tawk.to) วางซ้อนเหนือปุ่ม LINE - กดแล้วเปิด/ปิดหน้าต่างแชทของ Tawk.to =====
+       widget เริ่มต้นของ Tawk ถูกซ่อนไว้ถาวรด้วย CSS (#tawkchat-container) + JS hideWidget()
+       เพื่อให้เหลือแค่ปุ่มวงกลมนี้ปุ่มเดียว ไม่มี bubble แดงซ้อนกัน -->
+  <button type="button" class="chat-float-btn" id="chatFloatBtn" aria-label="Chat with us"
+    onclick="if (window.Tawk_API && Tawk_API.toggle) { Tawk_API.toggle(); }">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
+      <path d="M4 12c0-4.42 3.58-8 8-8s8 3.58 8 8c0 4.42-3.58 8-8 8-1.13 0-2.2-.23-3.18-.66L4 20l1.02-4.36C4.38 14.5 4 13.29 4 12z" fill="#ffffff"/>
+      <circle cx="8.5" cy="12" r="1.1" fill="#2563eb"/>
+      <circle cx="12" cy="12" r="1.1" fill="#2563eb"/>
+      <circle cx="15.5" cy="12" r="1.1" fill="#2563eb"/>
+    </svg>
+  </button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/l10n/th.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/l10n/zh.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script>
+    /* *** แก้ URL ตรงนี้ให้เป็นลิงก์ Apps Script /exec ล่าสุดของพี่ *** */
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2AAvehxPZrLlnB_v2j-lJWtcDeGjYXdt27Kkh2Dp8gG33smY0Z4rMtfD1T8EJ8A68/exec';
+
+    // ===== i18n =====
+    const I18N = {
+      TH: {
+        badge: 'ระบบจองคิว', title: 'ระบบจองคิว', subtitle: 'กรอกข้อมูลเพื่อทำการจองคิวบริการ',
+        serviceType: 'ประเภทบริการ', serviceTypeDefaultOpt: '-- เลือกประเภทบริการ --',
+        contactName: 'ชื่อผู้ติดต่อ', contactNamePh: 'ชื่อ-นามสกุล ผู้ติดต่อ',
+        shopAddress: 'ที่อยู่ของร้าน', shopAddressPh: 'ที่อยู่ร้าน / สถานที่เข้าบริการ',
+        mapLabel: 'ปักหมุดตำแหน่งร้าน (แผนที่)',
+        mapLocateBtn: 'ใช้ตำแหน่งปัจจุบันของฉัน',
+        mapLocating: 'กำลังค้นหาตำแหน่ง...',
+        mapNotPicked: 'แตะบนแผนที่หรือลากหมุดเพื่อระบุตำแหน่ง',
+        mapPicked: 'ปักหมุดตำแหน่งแล้ว ✓',
+        mapLocateError: 'ไม่สามารถระบุตำแหน่งได้ กรุณาลากหมุดบนแผนที่แทน',
+        mapAddressLoading: 'กำลังค้นหาที่อยู่จากพิกัด...',
+        kitchenInfo: 'ข้อมูลเครื่องครัว', kitchenInfoPh: 'ยี่ห้อ / รุ่น / อาการเบื้องต้น',
+        phone: 'เบอร์ติดต่อ', email: 'อีเมล (สำหรับส่งใบยืนยันการจอง)',
+        image: 'รูปภาพ', fileDropText: 'คลิกเพื่อเลือกรูปภาพ หรือ ลากไฟล์มาวางที่นี่ (เลือกได้หลายรูป)',
+        imagesSelected: function (n) { return n + ' รูปที่เลือกไว้ (คลิกเพื่อเพิ่มรูปอื่น)'; },
+        dateLabel: 'ปฏิทินเลือกวัน', datePh: 'เลือกวันที่',
+        timeLabel: 'เวลาที่ต้องการให้เข้าซ่อม',
+        timeDefaultOpt: 'เลือกบริการและวันที่ก่อน', timeLoading: 'กำลังตรวจสอบคิวว่าง...',
+        timeNoSlot: 'ไม่มีคิวว่างในวันนี้', timeErr: 'เกิดข้อผิดพลาด', timePickOpt: '-- เลือกเวลา --',
+        slotRemain: function (n) { return 'เหลือ ' + n + ' ช่วงเวลาว่าง'; },
+        slotPickOther: 'กรุณาเลือกวันอื่น',
+        fullyBookedMsg: 'ขออภัย คิววันที่เลือกเต็มแล้ว กรุณาเลือกวันอื่น',
+        submitBtn: 'ยืนยันการจอง', submitting: 'กำลังบันทึก...',
+        requiredError: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
+        footerNote: 'เปิดให้จองเวลา 08:00 - 17:30 น. เท่านั้น',
+        toggleLabel: 'EN', flatpickrLocale: 'th', altFormat: 'j F Y', timeSuffix: ' น.',
+        fulfillment: 'บริการที่ต้องการ', fulfillmentDefaultOpt: '-- เลือกบริการที่ต้องการ --',
+        notSpecified: 'ไม่ระบุ',
+        shipCenterAddressLabel: 'ที่อยู่ศูนย์บริการ',
+        reviewTitle: 'ตรวจสอบข้อมูลก่อนยืนยัน',
+        reviewSubtitle: 'กรุณาตรวจสอบข้อมูลให้ถูกต้อง เนื่องจากไม่สามารถแก้ไขได้หลังยืนยันการจอง',
+        reviewEditBtn: 'แก้ไขข้อมูล',
+        draftBannerTitle: 'พบร่างข้อมูลที่ยังไม่เสร็จ',
+        draftSavedAt: function (str) { return 'บันทึกไว้เมื่อ ' + str + ' (ไม่รวมรูปภาพที่เคยแนบ)'; },
+        draftRestoreBtn: 'กู้คืนข้อมูล',
+        draftDiscardBtn: 'ทิ้งร่างนี้'
+      },
+      EN: {
+        badge: 'BOOKING SYSTEM', title: 'Booking System', subtitle: 'Fill in the details to book a service slot',
+        serviceType: 'Service Type', serviceTypeDefaultOpt: '-- Select service type --',
+        contactName: 'Contact Name', contactNamePh: 'Full name',
+        shopAddress: 'Shop Address', shopAddressPh: 'Shop address / service location',
+        mapLabel: 'Pin Your Location (Map)',
+        mapLocateBtn: 'Use My Current Location',
+        mapLocating: 'Locating...',
+        mapNotPicked: 'Tap the map or drag the pin to set a location',
+        mapPicked: 'Location pinned ✓',
+        mapLocateError: 'Could not detect your location. Please drag the pin on the map instead.',
+        mapAddressLoading: 'Looking up address...',
+        kitchenInfo: 'Kitchen Equipment Info', kitchenInfoPh: 'Brand / model / issue description',
+        phone: 'Phone Number', email: 'Email (for booking confirmation)',
+        image: 'Photo', fileDropText: 'Click to select images, or drag & drop here (multiple allowed)',
+        imagesSelected: function (n) { return n + ' image(s) selected (click to add more)'; },
+        dateLabel: 'Select Date', datePh: 'Select a date',
+        timeLabel: 'Preferred Service Time',
+        timeDefaultOpt: 'Select service & date first', timeLoading: 'Checking available slots...',
+        timeNoSlot: 'No slots available on this date', timeErr: 'An error occurred', timePickOpt: '-- Select time --',
+        slotRemain: function (n) { return n + ' slot(s) remaining'; },
+        slotPickOther: 'Please choose another date',
+        fullyBookedMsg: 'Sorry, this date is fully booked. Please select another date.',
+        submitBtn: 'Confirm Booking', submitting: 'Saving...',
+        requiredError: 'Please fill in all required fields',
+        footerNote: 'Bookings available 08:00 - 17:30 only',
+        toggleLabel: 'ไทย', flatpickrLocale: 'default', altFormat: 'F j, Y', timeSuffix: '',
+        fulfillment: 'Service Fulfillment', fulfillmentDefaultOpt: '-- Select fulfillment option --',
+        notSpecified: 'Not specified',
+        shipCenterAddressLabel: 'Service Center Address',
+        reviewTitle: 'Review Your Booking',
+        reviewSubtitle: 'Please check your details carefully — changes cannot be made after confirming.',
+        reviewEditBtn: 'Edit Details',
+        draftBannerTitle: 'We found an unfinished draft',
+        draftSavedAt: function (str) { return 'Saved at ' + str + ' (attached photos are not restored)'; },
+        draftRestoreBtn: 'Restore Draft',
+        draftDiscardBtn: 'Discard'
+      },
+      ZH: {
+        badge: '预约系统', title: '预约系统', subtitle: '请填写以下信息以预约服务',
+        serviceType: '服务类型', serviceTypeDefaultOpt: '-- 请选择服务类型 --',
+        contactName: '联系人姓名', contactNamePh: '姓名',
+        shopAddress: '店铺地址', shopAddressPh: '店铺地址 / 服务地点',
+        mapLabel: '标记店铺位置（地图）',
+        mapLocateBtn: '使用我的当前位置',
+        mapLocating: '正在定位...',
+        mapNotPicked: '点击地图或拖动图钉以设置位置',
+        mapPicked: '已标记位置 ✓',
+        mapLocateError: '无法获取您的位置，请在地图上拖动图钉。',
+        mapAddressLoading: '正在查询地址...',
+        kitchenInfo: '厨房设备信息', kitchenInfoPh: '品牌 / 型号 / 故障说明',
+        phone: '联系电话', email: '电子邮箱（用于接收预约确认信）',
+        image: '照片', fileDropText: '点击选择图片，或将文件拖放到此处（可选择多张）',
+        imagesSelected: function (n) { return '已选择 ' + n + ' 张图片（点击可继续添加）'; },
+        dateLabel: '选择日期', datePh: '请选择日期',
+        timeLabel: '希望服务时间',
+        timeDefaultOpt: '请先选择服务类型和日期', timeLoading: '正在查询可用时段...',
+        timeNoSlot: '当天没有可用时段', timeErr: '发生错误', timePickOpt: '-- 请选择时间 --',
+        slotRemain: function (n) { return '剩余 ' + n + ' 个时段'; },
+        slotPickOther: '请选择其他日期',
+        fullyBookedMsg: '抱歉，所选日期预约已满，请选择其他日期。',
+        submitBtn: '确认预约', submitting: '正在保存...',
+        requiredError: '请填写所有必填项目',
+        footerNote: '仅开放 08:00 - 17:30 预约',
+        toggleLabel: '', flatpickrLocale: 'zh', altFormat: 'Y年n月j日', timeSuffix: '',
+        fulfillment: '所需服务方式', fulfillmentDefaultOpt: '-- 请选择所需服务方式 --',
+        notSpecified: '未填写',
+        shipCenterAddressLabel: '服务中心地址',
+        reviewTitle: '确认预约信息',
+        reviewSubtitle: '请仔细核对以下信息，确认后将无法修改。',
+        reviewEditBtn: '编辑信息',
+        draftBannerTitle: '发现未完成的草稿',
+        draftSavedAt: function (str) { return '保存于 ' + str + '（不包含已上传的图片）'; },
+        draftRestoreBtn: '恢复草稿',
+        draftDiscardBtn: '放弃草稿'
+      }
+    };
+
+    let currentLang = 'TH';
+
+    // รายการประเภทบริการ สองภาษา (ตรงกับ SERVICE_TYPES ฝั่ง Apps Script)
+    // ใส่ไว้ในหน้าเว็บโดยตรง เพื่อให้สลับภาษาได้ทันที ไม่ต้องรอเรียก API
+    const SERVICE_TYPES = [
+      { value: 'REPAIR', label: { TH: 'ซ่อม (REPAIR)', EN: 'Repair', ZH: '维修' } },
+      { value: 'INSPECTION', label: { TH: 'ตรวจเช็คเครื่อง (INSPECTION)', EN: 'Equipment Inspection', ZH: '设备检查' } },
+      { value: 'MAINTENANCE', label: { TH: 'บำรุงรักษา (MAINTENANCE)', EN: 'Maintenance', ZH: '保养' } },
+      { value: 'INSTALLATION', label: { TH: 'ติดตั้ง (INSTALLATION)', EN: 'Installation', ZH: '安装' } },
+      { value: 'NEW_RESTAURANT_OPENING', label: { TH: 'เปิดร้านใหม่ (NEW RESTAURANT OPENING)', EN: 'New Restaurant Opening', ZH: '新店开业' } },
+      { value: 'RESTAURANT_RELOCATION', label: { TH: 'ย้ายร้าน (RESTAURANT RELOCATION)', EN: 'Restaurant Relocation', ZH: '店铺搬迁' } }
+    ];
+
+    // ===== รหัสแผนกที่รับผิดชอบแต่ละประเภทบริการ (ใช้เฉพาะฝั่งหลังบ้าน: Sheet/Email เท่านั้น ไม่โชว์ลูกค้า) =====
+    const SERVICE_DEPARTMENT_CODE = {
+      REPAIR: 'OP',
+      INSPECTION: 'EN',
+      MAINTENANCE: 'OP',
+      INSTALLATION: 'PJ',
+      NEW_RESTAURANT_OPENING: 'PJ',
+      RESTAURANT_RELOCATION: 'PJ'
+    };
+
+    // ช่องกรอกเพิ่มเติมตามประเภทบริการ (แสดงอัตโนมัติตามที่ติ๊กไว้ - ติ๊กได้หลายอัน โผล่ได้หลายชุด)
+    const DYNAMIC_FIELDS = {
+      REPAIR: [
+        {
+          id: 'urgencyLevel', type: 'select',
+          label: { TH: 'ระดับความเร่งด่วน', EN: 'Urgency Level', ZH: '紧急程度' },
+          options: [
+            { value: 'NORMAL', label: { TH: 'ปกติ', EN: 'Normal ', ZH: '正常' } },
+            { value: 'URGENT', label: { TH: 'เร่งด่วน', EN: 'Urgent', ZH: '紧急' } },
+            { value: 'EMERGENCY', label: { TH: 'ฉุกเฉิน (ด่วนที่สุด)', EN: 'Emergency (ASAP)', ZH: '非常紧急（尽快处理）' } }
+          ]
+        }
+      ],
+      MAINTENANCE: [
+        {
+          id: 'maintenanceFrequency', type: 'select',
+          label: { TH: 'ความถี่ที่ต้องการ', EN: 'Preferred Frequency', ZH: '所需保养频率' },
+          options: [
+            { value: 'MONTHLY', label: { TH: 'รายเดือน', EN: 'Monthly', ZH: '每月' } },
+            { value: 'QUARTERLY', label: { TH: 'ราย 3 เดือน', EN: 'Every 3 months', ZH: '每3个月' } },
+            { value: 'SEMI_ANNUAL', label: { TH: 'ราย 6 เดือน', EN: 'Every 6 months', ZH: '每6个月' } },
+            { value: 'ANNUAL', label: { TH: 'รายปี', EN: 'Annually', ZH: '每年' } }
+          ]
+        }
+      ],
+      INSTALLATION: [
+        {
+          id: 'installationEquipment', type: 'textarea',
+          label: { TH: 'รายการอุปกรณ์ที่จะติดตั้ง', EN: 'Equipment to Install', ZH: '需要安装的设备清单' },
+          placeholder: { TH: 'ระบุรายการอุปกรณ์ เช่น เตาแก๊ส, ตู้เย็น, เครื่องดูดควัน', EN: 'List the equipment, e.g. gas stove, refrigerator, exhaust hood', ZH: '请列出设备，例如：燃气灶、冰箱、抽油烟机' }
+        }
+      ],
+      NEW_RESTAURANT_OPENING: [
+        {
+          id: 'kitchenSize', type: 'text',
+          label: { TH: 'ขนาดพื้นที่ครัว', EN: 'Kitchen Area Size', ZH: '厨房面积' },
+          placeholder: { TH: 'เช่น 50 ตร.ม.', EN: 'e.g. 50 sq.m.', ZH: '例如：50平方米' }
+        },
+        {
+          id: 'expectedOpeningDate', type: 'date',
+          label: { TH: 'วันที่คาดว่าจะเปิดร้าน', EN: 'Expected Opening Date', ZH: '预计开业日期' }
+        }
+      ],
+      RESTAURANT_RELOCATION: [
+        {
+          id: 'oldAddress', type: 'textarea',
+          label: { TH: 'ที่อยู่เดิม', EN: 'Current Address', ZH: '原地址' },
+          placeholder: { TH: 'ที่อยู่ร้านปัจจุบัน', EN: 'Current shop address', ZH: '目前店铺地址' }
+        },
+        {
+          id: 'newAddress', type: 'textarea',
+          label: { TH: 'ที่อยู่ใหม่', EN: 'New Address', ZH: '新地址' },
+          placeholder: { TH: 'ที่อยู่ร้านใหม่ที่จะย้ายไป', EN: 'New shop address you are moving to', ZH: '搬迁后的新店铺地址' }
+        }
+      ]
+    };
+    // ===== รายชื่อจังหวัดในประเทศไทย (77 จังหวัด) TH/EN =====
+    const THAI_PROVINCES = [
+      ['กรุงเทพมหานคร','Bangkok'],['กระบี่','Krabi'],['กาญจนบุรี','Kanchanaburi'],['กาฬสินธุ์','Kalasin'],
+      ['กำแพงเพชร','Kamphaeng Phet'],['ขอนแก่น','Khon Kaen'],['จันทบุรี','Chanthaburi'],['ฉะเชิงเทรา','Chachoengsao'],
+      ['ชลบุรี','Chonburi'],['ชัยนาท','Chai Nat'],['ชัยภูมิ','Chaiyaphum'],['ชุมพร','Chumphon'],
+      ['เชียงราย','Chiang Rai'],['เชียงใหม่','Chiang Mai'],['ตรัง','Trang'],['ตราด','Trat'],
+      ['ตาก','Tak'],['นครนายก','Nakhon Nayok'],['นครปฐม','Nakhon Pathom'],['นครพนม','Nakhon Phanom'],
+      ['นครราชสีมา','Nakhon Ratchasima'],['นครศรีธรรมราช','Nakhon Si Thammarat'],['นครสวรรค์','Nakhon Sawan'],
+      ['นนทบุรี','Nonthaburi'],['นราธิวาส','Narathiwat'],['น่าน','Nan'],['บึงกาฬ','Bueng Kan'],
+      ['บุรีรัมย์','Buriram'],['ปทุมธานี','Pathum Thani'],['ประจวบคีรีขันธ์','Prachuap Khiri Khan'],
+      ['ปราจีนบุรี','Prachinburi'],['ปัตตานี','Pattani'],['พระนครศรีอยุธยา','Phra Nakhon Si Ayutthaya'],
+      ['พะเยา','Phayao'],['พังงา','Phang Nga'],['พัทลุง','Phatthalung'],['พิจิตร','Phichit'],
+      ['พิษณุโลก','Phitsanulok'],['เพชรบุรี','Phetchaburi'],['เพชรบูรณ์','Phetchabun'],['แพร่','Phrae'],
+      ['ภูเก็ต','Phuket'],['มหาสารคาม','Maha Sarakham'],['มุกดาหาร','Mukdahan'],['แม่ฮ่องสอน','Mae Hong Son'],
+      ['ยโสธร','Yasothon'],['ยะลา','Yala'],['ร้อยเอ็ด','Roi Et'],['ระนอง','Ranong'],['ระยอง','Rayong'],
+      ['ราชบุรี','Ratchaburi'],['ลพบุรี','Lopburi'],['ลำปาง','Lampang'],['ลำพูน','Lamphun'],['เลย','Loei'],
+      ['ศรีสะเกษ','Sisaket'],['สกลนคร','Sakon Nakhon'],['สงขลา','Songkhla'],['สตูล','Satun'],
+      ['สมุทรปราการ','Samut Prakan'],['สมุทรสงคราม','Samut Songkhram'],['สมุทรสาคร','Samut Sakhon'],
+      ['สระแก้ว','Sa Kaeo'],['สระบุรี','Saraburi'],['สิงห์บุรี','Sing Buri'],['สุโขทัย','Sukhothai'],
+      ['สุพรรณบุรี','Suphan Buri'],['สุราษฎร์ธานี','Surat Thani'],['สุรินทร์','Surin'],['หนองคาย','Nong Khai'],
+      ['หนองบัวลำภู','Nong Bua Lamphu'],['อ่างทอง','Ang Thong'],['อำนาจเจริญ','Amnat Charoen'],
+      ['อุดรธานี','Udon Thani'],['อุตรดิตถ์','Uttaradit'],['อุทัยธานี','Uthai Thani'],['อุบลราชธานี','Ubon Ratchathani']
+    ];
+
+    const MK_WAREHOUSE_ADDRESS = 'MK Warehouse 15/1 หมู่ที่1 ซอยแม่แจ่ม ถนน หนามแดง-บางพลี ตำบล บางแก้ว อำเภอบางพลี สมุทรปราการ';
+
+    const SHIP_ADDRESS_TITLE = {
+      TH: 'กรุณาจัดส่งอุปกรณ์มาที่ที่อยู่ศูนย์บริการด้านล่าง',
+      EN: 'Please ship the equipment to the service center address below',
+      ZH: '请将设备寄送至以下服务中心地址'
+    };
+
+    // ===== ตัวเลือก "บริการที่ต้องการ" (dropdown เดี่ยว) =====
+    const FULFILLMENT_TYPES = [
+      { value: 'PROVINCE_ONSITE', label: {
+          TH: 'ส่งช่างไปตามจังหวัดต่างๆ ในประเทศไทย',
+          EN: 'On-site Service — Nationwide by Province',
+          ZH: '派技术人员前往泰国各府（省）现场服务'
+      } },
+      { value: 'DEDICATED_TECH', label: {
+          TH: 'ต้องการช่างเทคนิคประจำสถานที่',
+          EN: 'Dedicated On-site Technician',
+          ZH: '需要驻场技术人员'
+      } },
+      { value: 'SHIP_TO_CENTER', label: {
+          TH: 'ส่งเครื่องอุปกรณ์ไปยังศูนย์บริการ Masterkitchen',
+          EN: 'Ship Equipment to Masterkitchen Service Center',
+          ZH: '将设备寄送至 Masterkitchen 服务中心'
+      } }
+    ];
+
+    // ฟิลด์เพิ่มเติมตามตัวเลือก "บริการที่ต้องการ" ที่เลือกไว้
+    const FULFILLMENT_FIELDS = {
+      PROVINCE_ONSITE: [
+        {
+          id: 'serviceProvince', type: 'select',
+          label: { TH: 'จังหวัดที่ต้องการให้เข้าบริการ', EN: 'Province for Service', ZH: '服务所在府（省）' },
+          options: THAI_PROVINCES.map(function (p) {
+            return { value: p[0], label: { TH: p[0], EN: p[1], ZH: p[0] } };
+          })
+        },
+        {
+          id: 'onsiteAddress', type: 'textarea',
+          label: { TH: 'ที่อยู่ที่จะให้เข้าซ่อม', EN: 'Address for On-site Service', ZH: '上门服务地址' },
+          placeholder: { TH: 'ระบุที่อยู่โดยละเอียดสำหรับให้ช่างเข้าบริการ', EN: 'Detailed address for the technician visit', ZH: '请填写技术人员上门服务的详细地址' }
+        }
+      ],
+      DEDICATED_TECH: [
+        {
+          id: 'preferredServiceDate', type: 'date',
+          label: { TH: 'วันที่เข้าบริการ (Preferred Service Date)', EN: 'Preferred Service Date', ZH: '希望服务日期' }
+        },
+        {
+          id: 'preferredServiceTimeRange', type: 'select',
+          label: { TH: 'ช่วงเวลาที่ต้องการเข้าบริการ', EN: 'Preferred Service Time', ZH: '希望服务时间段' },
+          options: [
+            { value: 'MORNING', label: { TH: 'ช่วงเช้า (08:00 - 12:00)', EN: 'Morning (08:00 - 12:00)', ZH: '上午（08:00 - 12:00）' } },
+            { value: 'AFTERNOON', label: { TH: 'ช่วงบ่าย (12:00 - 17:30)', EN: 'Afternoon (12:00 - 17:30)', ZH: '下午（12:00 - 17:30）' } },
+            { value: 'FULL_DAY', label: { TH: 'ได้ทั้งวัน', EN: 'Any time / full day', ZH: '全天均可' } }
+          ]
+        }
+      ],
+      SHIP_TO_CENTER: []
+    };
+
+    let fulfillmentDatePickers = [];
+
+    // เก็บ instance ของ flatpickr สำหรับฟิลด์ประเภทวันที่ในช่องเพิ่มเติม (อาจมีได้หลายตัวถ้าติ๊กหลายบริการ)
+    let extraDatePickers = [];
+
+    function resolveFlatpickrLocale_(code) {
+      if (code === 'th') return flatpickr.l10ns.th;
+      if (code === 'zh') return flatpickr.l10ns.zh;
+      return 'default';
+    }
+
+    const serviceTypeGroupEl = document.getElementById('serviceTypeGroup');
+    const bookingDateEl = document.getElementById('bookingDate');
+    const bookingTimeEl = document.getElementById('bookingTime');
+    const slotHint = document.getElementById('slotHint');
+    const form = document.getElementById('bookingForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const alertBox = document.getElementById('alertBox');
+    const fileDrop = document.getElementById('fileDrop');
+    const fileDropText = document.getElementById('fileDropText');
+    const imageInput = document.getElementById('imageInput');
+    const imagePreviewList = document.getElementById('imagePreviewList');
+    const mapLocateBtn = document.getElementById('mapLocateBtn');
+    const mapLocateBtnText = document.getElementById('mapLocateBtnText');
+    const mapCoordsHint = document.getElementById('mapCoordsHint');
+    const reviewOverlay = document.getElementById('reviewOverlay');
+    const reviewCardBody = document.getElementById('reviewCardBody');
+    const reviewEditBtn = document.getElementById('reviewEditBtn');
+    const reviewConfirmBtn = document.getElementById('reviewConfirmBtn');
+    // ===== เก็บข้อมูลฟอร์มที่ผ่านการตรวจครบแล้ว รอลูกค้ากด "ยืนยันการจอง" อีกครั้งในหน้าสรุป =====
+    let pendingFormData = null;
+
+    // ===== เก็บรูปที่เลือกไว้ทั้งหมดเป็น array: [{ base64, fileName, mimeType }, ...] =====
+    let selectedImages = [];
+    // ลูกค้าทุกคนถือเป็นประเภทองค์กร: ไม่ต้องจ่ายมัดจำ จองได้เลย ออกใบแจ้งหนี้ทีหลัง
+    const customerType = 'CORPORATE';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const datePicker = flatpickr('#bookingDate', {
+      dateFormat: 'Y-m-d', altInput: true, altFormat: I18N.TH.altFormat, minDate: today, disableMobile: true,
+      onChange: function () { refreshAvailableSlots(); }
+    });
+
+    // ===== แผนที่ปักหมุดตำแหน่งร้าน/จุดที่ต้องการให้เข้าบริการ (Leaflet + OpenStreetMap) =====
+    // ค่าเริ่มต้น: ศูนย์กลางกรุงเทพฯ - ยังไม่ถือว่าลูกค้า "ปักหมุด" จนกว่าจะแตะแผนที่ / ลากหมุด / กดใช้ตำแหน่งปัจจุบัน
+    const DEFAULT_MAP_CENTER = [13.7563, 100.5018];
+    let selectedLat = null;
+    let selectedLng = null;
+    let hasPickedLocation = false;
+    // ===== ใช้สำหรับ debounce + ยกเลิกผลลัพธ์เก่าของการค้นหาที่อยู่จากพิกัด (reverse geocoding) =====
+    let reverseGeocodeTimer = null;
+    let reverseGeocodeToken = 0;
+
+    const locationMap = L.map('locationMap', { attributionControl: true }).setView(DEFAULT_MAP_CENTER, 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(locationMap);
+
+    const locationMarker = L.marker(DEFAULT_MAP_CENTER, { draggable: true }).addTo(locationMap);
+
+    function setPickedLocation(lat, lng, recenter) {
+      selectedLat = lat;
+      selectedLng = lng;
+      hasPickedLocation = true;
+      locationMarker.setLatLng([lat, lng]);
+      if (recenter) locationMap.setView([lat, lng], 16);
+      updateMapCoordsHint();
+      scheduleDraftSave();
+      scheduleReverseGeocode_(lat, lng);
+    }
+
+    /**
+     * เว้นจังหวะก่อนยิงคำขอค้นหาที่อยู่จากพิกัด (reverse geocoding) เพื่อไม่ให้ยิงถี่เกินไปตอนลากหมุด
+     * และเพื่อเคารพนโยบายการใช้งานของ Nominatim (จำกัดที่ประมาณ 1 คำขอ/วินาที)
+     */
+    function scheduleReverseGeocode_(lat, lng) {
+      if (isApplyingDraft) return; // ไม่ยิงคำขอตอนกำลังกู้คืนร่างข้อมูล กันที่อยู่ที่เคยแก้ไขไว้เองถูกเขียนทับ
+      clearTimeout(reverseGeocodeTimer);
+      reverseGeocodeTimer = setTimeout(function () {
+        fillAddressFromCoords_(lat, lng);
+      }, 600);
+    }
+
+    /**
+     * เรียก Nominatim (OpenStreetMap) แปลงพิกัดกลับเป็นที่อยู่ แล้วเติมลงช่อง "ที่อยู่ของร้าน" ให้อัตโนมัติ
+     * ใช้ token กันผลลัพธ์เก่าเขียนทับค่าล่าสุด ถ้าผู้ใช้ปักหมุดใหม่ระหว่างรอผลลัพธ์เดิม
+     */
+    function fillAddressFromCoords_(lat, lng) {
+      const t = I18N[currentLang];
+      const myToken = ++reverseGeocodeToken;
+      const langCode = currentLang === 'TH' ? 'th' : (currentLang === 'ZH' ? 'zh' : 'en');
+      mapCoordsHint.textContent = t.mapAddressLoading;
+      const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng +
+        '&zoom=18&addressdetails=1&accept-language=' + langCode;
+      fetch(url, { headers: { 'Accept': 'application/json' } })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (myToken !== reverseGeocodeToken) return; // มีการปักหมุดใหม่ระหว่างรอ ไม่ใช้ผลลัพธ์นี้แล้ว
+          updateMapCoordsHint();
+          const address = data && data.display_name;
+          if (address) {
+            document.getElementById('shopAddress').value = address;
+            scheduleDraftSave();
+          }
+        })
+        .catch(function () {
+          if (myToken !== reverseGeocodeToken) return;
+          updateMapCoordsHint(); // ค้นหาที่อยู่ไม่สำเร็จ - เงียบๆ กลับไปโชว์พิกัดตามเดิม ลูกค้ากรอกที่อยู่เองได้
+        });
+    }
+
+    function updateMapCoordsHint() {
+      const t = I18N[currentLang];
+      if (hasPickedLocation && selectedLat !== null && selectedLng !== null) {
+        mapCoordsHint.textContent = t.mapPicked + ' (' + selectedLat.toFixed(5) + ', ' + selectedLng.toFixed(5) + ')';
+        mapCoordsHint.classList.add('picked');
+      } else {
+        mapCoordsHint.textContent = t.mapNotPicked;
+        mapCoordsHint.classList.remove('picked');
+      }
+    }
+
+    locationMap.on('click', function (e) {
+      setPickedLocation(e.latlng.lat, e.latlng.lng, false);
+    });
+    locationMarker.on('dragend', function () {
+      const pos = locationMarker.getLatLng();
+      setPickedLocation(pos.lat, pos.lng, false);
+    });
+
+    mapLocateBtn.addEventListener('click', function () {
+      const t = I18N[currentLang];
+      if (!navigator.geolocation) {
+        showAlert('error', t.mapLocateError);
+        return;
+      }
+      const originalText = mapLocateBtnText.textContent;
+      mapLocateBtnText.textContent = t.mapLocating;
+      mapLocateBtn.disabled = true;
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          setPickedLocation(pos.coords.latitude, pos.coords.longitude, true);
+          mapLocateBtnText.textContent = originalText;
+          mapLocateBtn.disabled = false;
+        },
+        function () {
+          mapLocateBtnText.textContent = originalText;
+          mapLocateBtn.disabled = false;
+          showAlert('error', t.mapLocateError);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+    function resetLocationMap() {
+      selectedLat = null;
+      selectedLng = null;
+      hasPickedLocation = false;
+      locationMarker.setLatLng(DEFAULT_MAP_CENTER);
+      locationMap.setView(DEFAULT_MAP_CENTER, 6);
+      updateMapCoordsHint();
+    }
+
+    // แผนที่บางครั้งเรนเดอร์ผิดขนาดถ้า container ยังไม่พร้อมตอนโหลดหน้าแรก - บังคับคำนวณขนาดใหม่อีกครั้ง
+    setTimeout(function () { locationMap.invalidateSize(); }, 300);
+
+    // สร้าง checkbox รายการประเภทบริการ (คงค่าที่ติ๊กไว้เดิมได้ ถ้า preserveValues = true เช่นตอนสลับภาษา)
+    function renderServiceTypeCheckboxes(preserveValues) {
+      const lang = currentLang;
+      const previouslyChecked = preserveValues ? getSelectedServiceTypes() : [];
+      serviceTypeGroupEl.innerHTML = '';
+      SERVICE_TYPES.forEach(function (t) {
+        const item = document.createElement('label');
+        item.className = 'checkbox-item';
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.id = 'svc_' + t.value;
+        input.value = t.value;
+        input.checked = previouslyChecked.indexOf(t.value) > -1;
+
+        const span = document.createElement('span');
+        span.textContent = t.label[lang];
+
+        item.appendChild(input);
+        item.appendChild(span);
+        item.classList.toggle('checked', input.checked);
+        serviceTypeGroupEl.appendChild(item);
+      });
+    }
+
+    function getSelectedServiceTypes() {
+      return SERVICE_TYPES
+        .filter(function (t) {
+          const el = document.getElementById('svc_' + t.value);
+          return el && el.checked;
+        })
+        .map(function (t) { return t.value; });
+    }
+
+    // ฟังการติ๊ก/ถอดติ๊ก ผ่าน event delegation บนกลุ่ม checkbox ทั้งหมด
+    serviceTypeGroupEl.addEventListener('change', function (e) {
+      if (e.target && e.target.type === 'checkbox') {
+        const item = e.target.closest('.checkbox-item');
+        if (item) item.classList.toggle('checked', e.target.checked);
+        refreshAvailableSlots();
+        renderDynamicFields();
+        // ===== ติ๊ก/ถอดติ๊กประเภทบริการ อาจทำให้ตัวเลือก SHIP_TO_CENTER ต้องถูกซ่อน/แสดงใหม่ =====
+        renderFulfillmentOptions(true);
+        renderFulfillmentFields();
+      }
+    });
+
+    // เรนเดอร์ฟิลด์เพิ่มเติมของทุกบริการที่ติ๊กไว้ เรียงเป็นชุดๆ พร้อมหัวข้อคั่นแต่ละชุด
+    // ถ้าไม่ติ๊กอะไรเลย จะไม่มีฟิลด์อะไรโผล่ขึ้นมาเลย
+    function renderDynamicFields() {
+      const container = document.getElementById('dynamicFields');
+      const lang = currentLang;
+      const selected = getSelectedServiceTypes();
+
+      // เก็บค่าที่กรอกไว้ก่อนเรนเดอร์ใหม่ (กันข้อมูลหายตอนสลับภาษา/ติ๊กเพิ่ม)
+      const savedValues = {};
+      selected.forEach(function (svc) {
+        (DYNAMIC_FIELDS[svc] || []).forEach(function (f) {
+          const el = document.getElementById(f.id);
+          if (el) savedValues[f.id] = el.value;
+        });
+      });
+
+      extraDatePickers.forEach(function (p) { p.destroy(); });
+      extraDatePickers = [];
+      container.innerHTML = '';
+
+      selected.forEach(function (svc) {
+        const fields = DYNAMIC_FIELDS[svc] || [];
+        if (fields.length === 0) return;
+
+        const svcMeta = SERVICE_TYPES.find(function (t) { return t.value === svc; });
+        const title = document.createElement('div');
+        title.className = 'service-group-title';
+        title.textContent = svcMeta ? svcMeta.label[lang] : svc;
+        container.appendChild(title);
+
+        fields.forEach(function (f) {
+          const wrap = document.createElement('div');
+          wrap.className = 'field';
+
+          const label = document.createElement('label');
+          label.textContent = f.label[lang];
+          wrap.appendChild(label);
+
+          let inputEl;
+          if (f.type === 'select') {
+            inputEl = document.createElement('select');
+            inputEl.id = f.id;
+            // ตัวเลือกว่างไว้ก่อน: ไม่บังคับให้ต้องเลือกรายละเอียดของบริการนี้ ถ้าไม่จำเป็นก็ปล่อยว่างไว้ได้
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = lang === 'EN' ? '-- Not specified --' : (lang === 'ZH' ? '-- 未指定 --' : '-- ไม่ระบุ --');
+            inputEl.appendChild(placeholder);
+            f.options.forEach(function (opt) {
+              const o = document.createElement('option');
+              o.value = opt.value; o.textContent = opt.label[lang];
+              inputEl.appendChild(o);
+            });
+          } else if (f.type === 'textarea') {
+            inputEl = document.createElement('textarea');
+            inputEl.id = f.id;
+            if (f.placeholder) inputEl.placeholder = f.placeholder[lang];
+          } else {
+            inputEl = document.createElement('input');
+            inputEl.type = 'text';
+            inputEl.id = f.id;
+            inputEl.autocomplete = 'off';
+            if (f.placeholder) inputEl.placeholder = f.placeholder[lang];
+            if (f.type === 'date') { inputEl.readOnly = true; }
+          }
+          wrap.appendChild(inputEl);
+          container.appendChild(wrap);
+
+          if (savedValues[f.id] !== undefined) inputEl.value = savedValues[f.id];
+
+          if (f.type === 'date') {
+            const picker = flatpickr('#' + f.id, {
+              dateFormat: 'Y-m-d', altInput: true, altFormat: I18N[lang].altFormat,
+              minDate: today, disableMobile: true,
+              locale: resolveFlatpickrLocale_(I18N[lang].flatpickrLocale)
+            });
+            extraDatePickers.push(picker);
+            if (savedValues[f.id]) picker.setDate(savedValues[f.id], true);
+          }
+        });
+      });
+    }
+
+    // ===== ประเภทบริการที่ไม่รองรับตัวเลือก "ส่งเครื่องอุปกรณ์ไปยังศูนย์บริการ" (ต้องมีช่างไปหน้างานจริง) =====
+    const FULFILLMENT_RESTRICTED_SERVICE_TYPES = ['INSTALLATION', 'NEW_RESTAURANT_OPENING', 'RESTAURANT_RELOCATION'];
+    const SHIP_TO_CENTER_VALUE = 'SHIP_TO_CENTER';
+
+    function isShipToCenterAllowed_() {
+      const selected = getSelectedServiceTypes();
+      return !selected.some(function (s) { return FULFILLMENT_RESTRICTED_SERVICE_TYPES.indexOf(s) > -1; });
+    }
+
+    // เรนเดอร์ตัวเลือกใน dropdown "บริการที่ต้องการ" (คงค่าที่เลือกไว้เดิมได้ตอนสลับภาษา)
+    // ถ้าติ๊กประเภทบริการที่ไม่รองรับ SHIP_TO_CENTER ไว้ จะซ่อนตัวเลือกนั้นออกจากรายการ
+    function renderFulfillmentOptions(preserveValue) {
+      const sel = document.getElementById('fulfillmentType');
+      const lang = currentLang;
+      const prevVal = preserveValue ? sel.value : '';
+      const shipAllowed = isShipToCenterAllowed_();
+      sel.innerHTML = '';
+      const def = document.createElement('option');
+      def.value = ''; def.textContent = I18N[lang].fulfillmentDefaultOpt;
+      sel.appendChild(def);
+      FULFILLMENT_TYPES.forEach(function (f) {
+        if (f.value === SHIP_TO_CENTER_VALUE && !shipAllowed) return; // ปิดตัวเลือกนี้เมื่อเลือกบริการที่ไม่รองรับ
+        const o = document.createElement('option');
+        o.value = f.value; o.textContent = f.label[lang];
+        sel.appendChild(o);
+      });
+      // ถ้าค่าที่เคยเลือกไว้คือ SHIP_TO_CENTER แต่ตอนนี้ถูกปิดไปแล้ว ให้ล้างค่าทิ้ง ไม่ preserve ค่าที่ใช้ไม่ได้แล้ว
+      if (prevVal && (prevVal !== SHIP_TO_CENTER_VALUE || shipAllowed)) {
+        sel.value = prevVal;
+      } else {
+        sel.value = '';
+      }
+    }
+
+    document.getElementById('fulfillmentType').addEventListener('change', function () {
+      renderFulfillmentFields();
+    });
+
+    // เรนเดอร์ฟิลด์เพิ่มเติมตามตัวเลือก "บริการที่ต้องการ" ที่เลือกไว้ (เลือกได้ทีละ 1 อย่าง)
+    function renderFulfillmentFields() {
+      const container = document.getElementById('fulfillmentFields');
+      const lang = currentLang;
+      const val = document.getElementById('fulfillmentType').value;
+
+      const savedValues = {};
+      (FULFILLMENT_FIELDS[val] || []).forEach(function (f) {
+        const el = document.getElementById(f.id);
+        if (el) savedValues[f.id] = el.value;
+      });
+
+      fulfillmentDatePickers.forEach(function (p) { p.destroy(); });
+      fulfillmentDatePickers = [];
+      container.innerHTML = '';
+
+      if (!val) return;
+
+      if (val === 'SHIP_TO_CENTER') {
+        const wrap = document.createElement('div');
+        wrap.className = 'field';
+        const info = document.createElement('div');
+        info.className = 'info-box';
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'info-title';
+        titleDiv.textContent = SHIP_ADDRESS_TITLE[lang];
+        const addrDiv = document.createElement('div');
+        addrDiv.textContent = MK_WAREHOUSE_ADDRESS;
+        info.appendChild(titleDiv);
+        info.appendChild(addrDiv);
+        wrap.appendChild(info);
+        container.appendChild(wrap);
+        return;
+      }
+
+      const fields = FULFILLMENT_FIELDS[val] || [];
+      fields.forEach(function (f) {
+        const wrap = document.createElement('div');
+        wrap.className = 'field';
+
+        const label = document.createElement('label');
+        label.textContent = f.label[lang];
+        wrap.appendChild(label);
+
+        let inputEl;
+        if (f.type === 'select') {
+          inputEl = document.createElement('select');
+          inputEl.id = f.id;
+          const placeholder = document.createElement('option');
+          placeholder.value = '';
+          placeholder.textContent = lang === 'EN' ? '-- Select --' : (lang === 'ZH' ? '-- 请选择 --' : '-- เลือก --');
+          inputEl.appendChild(placeholder);
+          f.options.forEach(function (opt) {
+            const o = document.createElement('option');
+            o.value = opt.value; o.textContent = opt.label[lang];
+            inputEl.appendChild(o);
+          });
+        } else if (f.type === 'textarea') {
+          inputEl = document.createElement('textarea');
+          inputEl.id = f.id;
+          if (f.placeholder) inputEl.placeholder = f.placeholder[lang];
+        } else {
+          inputEl = document.createElement('input');
+          inputEl.type = 'text';
+          inputEl.id = f.id;
+          inputEl.autocomplete = 'off';
+          if (f.placeholder) inputEl.placeholder = f.placeholder[lang];
+          if (f.type === 'date') { inputEl.readOnly = true; }
+        }
+        wrap.appendChild(inputEl);
+        container.appendChild(wrap);
+
+        if (savedValues[f.id] !== undefined) inputEl.value = savedValues[f.id];
+
+        if (f.type === 'date') {
+          const picker = flatpickr('#' + f.id, {
+            dateFormat: 'Y-m-d', altInput: true, altFormat: I18N[lang].altFormat,
+            minDate: today, disableMobile: true,
+            locale: resolveFlatpickrLocale_(I18N[lang].flatpickrLocale)
+          });
+          fulfillmentDatePickers.push(picker);
+          if (savedValues[f.id]) picker.setDate(savedValues[f.id], true);
+        }
+      });
+    }
+
+    function applyLanguage(lang) {
+      currentLang = lang;
+      const t = I18N[lang];
+      document.getElementById('badgeText').textContent = t.badge;
+      document.getElementById('pageTitle').textContent = t.title;
+      document.getElementById('pageSubtitle').textContent = t.subtitle;
+      document.getElementById('lblServiceType').textContent = t.serviceType;
+      document.getElementById('lblFulfillment').textContent = t.fulfillment;
+      document.getElementById('lblContactName').textContent = t.contactName;
+      document.getElementById('contactName').placeholder = t.contactNamePh;
+      document.getElementById('lblShopAddress').textContent = t.shopAddress;
+      document.getElementById('shopAddress').placeholder = t.shopAddressPh;
+      document.getElementById('lblMap').textContent = t.mapLabel;
+      mapLocateBtnText.textContent = t.mapLocateBtn;
+      updateMapCoordsHint();
+      document.getElementById('lblKitchenInfo').textContent = t.kitchenInfo;
+      document.getElementById('kitchenInfo').placeholder = t.kitchenInfoPh;
+      document.getElementById('lblPhone').textContent = t.phone;
+      document.getElementById('lblEmail').textContent = t.email;
+      document.getElementById('lblImage').textContent = t.image;
+      fileDropText.textContent = selectedImages.length > 0 ? t.imagesSelected(selectedImages.length) : t.fileDropText;
+      document.getElementById('lblDate').textContent = t.dateLabel;
+      bookingDateEl.placeholder = t.datePh;
+      document.getElementById('lblTime').textContent = t.timeLabel;
+      document.getElementById('footerNote').textContent = t.footerNote;
+      submitBtn.textContent = t.submitBtn;
+      document.querySelectorAll('.lang-opt').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+      });
+
+      datePicker.set('locale', resolveFlatpickrLocale_(t.flatpickrLocale));
+      datePicker.set('altFormat', t.altFormat);
+
+      renderServiceTypeCheckboxes(true);
+      refreshAvailableSlots();
+      renderDynamicFields();
+      renderFulfillmentOptions(true);
+      renderFulfillmentFields();
+      if (typeof updateDraftBannerText_ === 'function' && draftBannerEl && draftBannerEl.classList.contains('active')) {
+        updateDraftBannerText_();
+      }
+    }
+
+    document.querySelectorAll('.lang-opt').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyLanguage(btn.getAttribute('data-lang'));
+      });
+    });
+
+    function refreshAvailableSlots(forcedPreviousTime) {
+      const t = I18N[currentLang];
+      const selected = getSelectedServiceTypes();
+      const date = bookingDateEl.value;
+
+      // ===== เก็บเวลาที่ผู้ใช้เคยเลือกไว้ก่อนรีเซ็ต dropdown =====
+      // (กันปัญหาเวลาที่เคยเลือกหายไปเงียบๆ ทุกครั้งที่ติ๊ก/ถอดติ๊กประเภทบริการ)
+      // ถ้ามีการส่ง forcedPreviousTime เข้ามา (เช่นตอนกู้คืนร่างข้อมูล) จะใช้ค่านั้นแทนค่าที่ dropdown มีอยู่ตอนนี้
+      const previousTime = forcedPreviousTime !== undefined ? forcedPreviousTime : bookingTimeEl.value;
+
+      bookingTimeEl.innerHTML = '';
+      slotHint.textContent = '';
+
+      if (selected.length === 0 || !date) {
+        bookingTimeEl.disabled = true;
+        const opt = document.createElement('option');
+        opt.value = ''; opt.textContent = t.timeDefaultOpt;
+        bookingTimeEl.appendChild(opt);
+        return;
+      }
+
+      bookingTimeEl.disabled = true;
+      const loadingOpt = document.createElement('option');
+      loadingOpt.value = ''; loadingOpt.textContent = t.timeLoading;
+      bookingTimeEl.appendChild(loadingOpt);
+
+      const url = APPS_SCRIPT_URL + '?action=getAvailableSlots&serviceTypes=' + encodeURIComponent(selected.join(',')) + '&date=' + encodeURIComponent(date);
+
+      fetch(url)
+        .then(function (res) { return res.json(); })
+        .then(function (slots) {
+          const t2 = I18N[currentLang];
+          bookingTimeEl.innerHTML = '';
+          if (!slots || slots.error || slots.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = ''; opt.textContent = t2.timeNoSlot;
+            bookingTimeEl.appendChild(opt);
+            bookingTimeEl.disabled = true;
+            slotHint.textContent = t2.slotPickOther;
+
+            // ===== วันนี้คิวเต็มแล้ว: ขึ้น alert แดงแจ้งขออภัยให้เห็นชัดเจนทันที =====
+            // (ไม่ขึ้นซ้ำถ้าเป็น error จาก slots.error เพราะกรณีนั้นเป็นข้อผิดพลาดของระบบ ไม่ใช่คิวเต็ม)
+            if (!slots || !slots.error) {
+              showAlert('error', t2.fullyBookedMsg);
+            }
+            return;
+          }
+
+          // มีคิวว่าง: ซ่อน alert เดิม (ถ้าเคยขึ้นว่าคิวเต็มจากการเช็ควันก่อนหน้า)
+          alertBox.style.display = 'none';
+
+          const placeholder = document.createElement('option');
+          placeholder.value = ''; placeholder.textContent = t2.timePickOpt;
+          bookingTimeEl.appendChild(placeholder);
+          slots.forEach(function (s) {
+            const opt = document.createElement('option');
+            opt.value = s; opt.textContent = s + t2.timeSuffix;
+            bookingTimeEl.appendChild(opt);
+          });
+          bookingTimeEl.disabled = false;
+          slotHint.textContent = t2.slotRemain(slots.length);
+
+          // ===== ถ้าเวลาที่เคยเลือกไว้ยังว่างอยู่ในรายการใหม่ ให้เลือกคืนให้อัตโนมัติ =====
+          if (previousTime && slots.indexOf(previousTime) > -1) {
+            bookingTimeEl.value = previousTime;
+          } else if (previousTime) {
+            // เวลาที่เคยเลือกไว้ไม่ว่างแล้ว แจ้งเตือนผู้ใช้ให้เลือกใหม่แทนที่จะปล่อยให้หายเงียบๆ
+            slotHint.textContent = t2.slotRemain(slots.length) +
+              (currentLang === 'EN' ? ' — your previous time is no longer available, please pick again.' :
+               currentLang === 'ZH' ? ' — 您之前选择的时间已不可用，请重新选择。' :
+               ' — เวลาที่เคยเลือกไว้ไม่ว่างแล้ว กรุณาเลือกใหม่');
+          }
+        })
+        .catch(function (err) {
+          const t2 = I18N[currentLang];
+          bookingTimeEl.innerHTML = '<option value="">' + t2.timeErr + '</option>';
+          slotHint.textContent = err.message || t2.timeErr;
+        });
+    }
+
+    // ===== เลือกรูปได้หลายรูป: อ่านทีละไฟล์ด้วย FileReader แล้วเก็บลง selectedImages =====
+    imageInput.addEventListener('change', function (e) {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+      let pending = files.length;
+      files.forEach(function (file) {
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+          selectedImages.push({ base64: evt.target.result, fileName: file.name, mimeType: file.type });
+          pending -= 1;
+          if (pending === 0) {
+            imageInput.value = ''; // เคลียร์ค่า input เพื่อให้เลือกไฟล์ซ้ำเดิมเพิ่มได้อีกในครั้งถัดไป
+            renderImagePreviews();
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    function renderImagePreviews() {
+      const t = I18N[currentLang];
+      imagePreviewList.innerHTML = '';
+      selectedImages.forEach(function (img, idx) {
+        const item = document.createElement('div');
+        item.className = 'image-preview-item';
+
+        const imgEl = document.createElement('img');
+        imgEl.src = img.base64;
+        imgEl.alt = img.fileName || '';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          selectedImages.splice(idx, 1);
+          renderImagePreviews();
+        });
+
+        item.appendChild(imgEl);
+        item.appendChild(removeBtn);
+        imagePreviewList.appendChild(item);
+      });
+
+      if (selectedImages.length > 0) {
+        fileDropText.textContent = t.imagesSelected(selectedImages.length);
+        fileDrop.classList.add('has-file');
+      } else {
+        fileDropText.textContent = t.fileDropText;
+        fileDrop.classList.remove('has-file');
+      }
+    }
+
+    function showAlert(type, message) {
+      alertBox.className = 'alert ' + type;
+      alertBox.textContent = message;
+      alertBox.style.display = 'block';
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function collectFormData() {
+      const selected = getSelectedServiceTypes();
+
+      // ===== สร้างข้อความหัวข้อบริการที่แนบรหัสแผนกกำกับไว้ สำหรับใช้ฝั่งหลังบ้าน (Sheet/Email) เท่านั้น =====
+      // เช่น "ซ่อม (REPAIR) [OP], ตรวจเช็คเครื่อง (INSPECTION) [EN]"
+      // ลูกค้าไม่เห็นข้อความนี้ในหน้าเว็บ เพราะสร้างขึ้นตอนรวบรวมข้อมูลก่อนส่งเท่านั้น
+      const serviceTypesLabeled = selected.map(function (svc) {
+        const meta = SERVICE_TYPES.find(function (t) { return t.value === svc; });
+        const label = meta ? meta.label.TH : svc;
+        const code = SERVICE_DEPARTMENT_CODE[svc] || '';
+        return code ? (label + ' [' + code + ']') : label;
+      });
+
+      // รหัสแผนกล้วนๆ แบบไม่ซ้ำ เผื่อฝั่งหลังบ้านอยากใช้แยกคอลัมน์ / กรองอีเมลตามแผนก
+      const departmentCodes = Array.from(new Set(
+        selected.map(function (svc) { return SERVICE_DEPARTMENT_CODE[svc] || ''; }).filter(Boolean)
+      ));
+
+      const data = {
+        serviceTypes: selected,
+        serviceTypesLabeled: serviceTypesLabeled, // ===== หัวข้อบริการ + รหัสแผนก สำหรับ Sheet/Email =====
+        departmentCodes: departmentCodes,          // ===== รหัสแผนกล้วนๆ เช่น ["OP","PJ"] =====
+        contactName: document.getElementById('contactName').value.trim(),
+        shopAddress: document.getElementById('shopAddress').value.trim(),
+        // ===== พิกัดที่ลูกค้าปักหมุดไว้บนแผนที่ (ถ้ามี) - ใช้แปลงเป็นลิงก์ Google Maps ฝั่งหลังบ้าน =====
+        mapLat: hasPickedLocation && selectedLat !== null ? selectedLat.toFixed(6) : '',
+        mapLng: hasPickedLocation && selectedLng !== null ? selectedLng.toFixed(6) : '',
+        kitchenInfo: document.getElementById('kitchenInfo').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        customerEmail: document.getElementById('customerEmail').value.trim(),
+        bookingDate: bookingDateEl.value,
+        bookingTime: bookingTimeEl.value,
+        images: selectedImages, // ===== ส่งรูปทั้งหมดเป็น array [{base64, fileName, mimeType}, ...] =====
+        customerType: customerType,
+        language: currentLang
+      };
+      let extraFields = [];
+      selected.forEach(function (svc) {
+        extraFields = extraFields.concat(DYNAMIC_FIELDS[svc] || []);
+      });
+      extraFields.forEach(function (f) {
+        const el = document.getElementById(f.id);
+        if (el) data[f.id] = (el.value || '').trim();
+      });
+
+      const fulfillment = document.getElementById('fulfillmentType').value;
+      data.fulfillmentType = fulfillment;
+      const fFields = FULFILLMENT_FIELDS[fulfillment] || [];
+      fFields.forEach(function (f) {
+        const el = document.getElementById(f.id);
+        if (!el) return;
+        data[f.id] = (el.value || '').trim();
+      });
+      return data;
+    }
+
+    /**
+     * แปลงวันที่ yyyy-MM-dd ให้อ่านง่ายตามภาษา สำหรับใช้แสดงในหน้าสรุปก่อนยืนยัน (ฝั่งหน้าเว็บ)
+     */
+    function formatDateDisplay_(dateStr, lang) {
+      if (!dateStr) return '-';
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return dateStr;
+      const y = Number(parts[0]);
+      const m = Number(parts[1]);
+      const d = Number(parts[2]);
+      if (lang === 'TH') {
+        const thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+          'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+        return d + ' ' + (thaiMonths[m - 1] || m) + ' ' + (y + 543);
+      }
+      if (lang === 'ZH') return y + '年' + m + '月' + d + '日';
+      const months = ['January','February','March','April','May','June',
+        'July','August','September','October','November','December'];
+      return (months[m - 1] || m) + ' ' + d + ', ' + y;
+    }
+
+    /**
+     * รวบรวม {label, value} ทุกฟิลด์ที่ลูกค้ากรอกไว้ เพื่อแสดงในหน้าสรุปก่อนยืนยัน (review step)
+     * ใช้ label เดียวกับที่แสดงในฟอร์มจริง เพื่อให้ลูกค้าจำได้ตรงกัน
+     */
+    function buildReviewRows_(formData) {
+      const lang = currentLang;
+      const t = I18N[lang];
+      const rows = [];
+
+      const serviceLabel = (formData.serviceTypes || []).map(function (v) {
+        const m = SERVICE_TYPES.find(function (s) { return s.value === v; });
+        return m ? m.label[lang] : v;
+      }).join(' + ');
+      rows.push({ label: t.serviceType, value: serviceLabel || t.notSpecified });
+
+      (formData.serviceTypes || []).forEach(function (svc) {
+        (DYNAMIC_FIELDS[svc] || []).forEach(function (f) {
+          const raw = formData[f.id];
+          if (!raw) return;
+          let val = raw;
+          if (f.type === 'select') {
+            const opt = f.options.find(function (o) { return o.value === raw; });
+            val = opt ? opt.label[lang] : raw;
+          } else if (f.type === 'date') {
+            val = formatDateDisplay_(raw, lang);
+          }
+          rows.push({ label: f.label[lang], value: val });
+        });
+      });
+
+      const fm = FULFILLMENT_TYPES.find(function (f) { return f.value === formData.fulfillmentType; });
+      rows.push({ label: t.fulfillment, value: fm ? fm.label[lang] : t.notSpecified });
+
+      if (formData.fulfillmentType === 'SHIP_TO_CENTER') {
+        rows.push({ label: t.shipCenterAddressLabel, value: MK_WAREHOUSE_ADDRESS });
+      } else {
+        (FULFILLMENT_FIELDS[formData.fulfillmentType] || []).forEach(function (f) {
+          const raw = formData[f.id];
+          if (!raw) return;
+          let val = raw;
+          if (f.type === 'select') {
+            const opt = f.options.find(function (o) { return o.value === raw; });
+            val = opt ? opt.label[lang] : raw;
+          } else if (f.type === 'date') {
+            val = formatDateDisplay_(raw, lang);
+          }
+          rows.push({ label: f.label[lang], value: val });
+        });
+      }
+
+      rows.push({ label: t.contactName, value: formData.contactName || t.notSpecified });
+      rows.push({ label: t.phone, value: formData.phone || t.notSpecified });
+      if (formData.customerEmail) rows.push({ label: t.email, value: formData.customerEmail });
+      if (formData.shopAddress) rows.push({ label: t.shopAddress, value: formData.shopAddress });
+      rows.push({
+        label: t.mapLabel,
+        value: (formData.mapLat && formData.mapLng) ? (formData.mapLat + ', ' + formData.mapLng) : t.mapNotPicked
+      });
+      if (formData.kitchenInfo) rows.push({ label: t.kitchenInfo, value: formData.kitchenInfo });
+      rows.push({ label: t.dateLabel, value: formatDateDisplay_(formData.bookingDate, lang) });
+      rows.push({ label: t.timeLabel, value: formData.bookingTime + t.timeSuffix });
+      return rows;
+    }
+
+    /**
+     * เรนเดอร์ + เปิดหน้าสรุปก่อนยืนยัน (review step) จากข้อมูลที่ผ่านการตรวจครบถ้วนแล้ว
+     */
+    function showReviewModal_(formData) {
+      const lang = currentLang;
+      const t = I18N[lang];
+      document.getElementById('reviewTitle').textContent = t.reviewTitle;
+      document.getElementById('reviewSubtitle').textContent = t.reviewSubtitle;
+      reviewEditBtn.textContent = t.reviewEditBtn;
+      reviewConfirmBtn.textContent = t.submitBtn;
+      reviewConfirmBtn.disabled = false;
+
+      reviewCardBody.innerHTML = '';
+      buildReviewRows_(formData).forEach(function (r) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'review-row';
+        const lbl = document.createElement('div');
+        lbl.className = 'rlabel';
+        lbl.textContent = r.label;
+        const val = document.createElement('div');
+        val.className = 'rvalue';
+        val.textContent = r.value;
+        rowEl.appendChild(lbl);
+        rowEl.appendChild(val);
+        reviewCardBody.appendChild(rowEl);
+      });
+
+      // แถวรูปภาพ: แสดงเป็น thumbnail แทนข้อความ (ถ้ามีรูปแนบ)
+      if (selectedImages.length > 0) {
+        const imgRow = document.createElement('div');
+        imgRow.className = 'review-row';
+        const lbl = document.createElement('div');
+        lbl.className = 'rlabel';
+        lbl.textContent = t.image;
+        const val = document.createElement('div');
+        val.className = 'review-images';
+        selectedImages.forEach(function (img) {
+          const im = document.createElement('img');
+          im.src = img.base64;
+          im.alt = img.fileName || '';
+          val.appendChild(im);
+        });
+        imgRow.appendChild(lbl);
+        imgRow.appendChild(val);
+        reviewCardBody.appendChild(imgRow);
+      }
+
+      reviewOverlay.classList.add('active');
+    }
+
+    reviewEditBtn.addEventListener('click', function () {
+      reviewOverlay.classList.remove('active');
+    });
+
+    // คลิกพื้นหลังนอกการ์ด = ปิด modal กลับไปแก้ไข (เหมือนกด "แก้ไขข้อมูล")
+    reviewOverlay.addEventListener('click', function (e) {
+      if (e.target === reviewOverlay) reviewOverlay.classList.remove('active');
+    });
+
+    reviewConfirmBtn.addEventListener('click', function () {
+      if (!pendingFormData) return;
+      const t = I18N[currentLang];
+      reviewOverlay.classList.remove('active');
+      reviewConfirmBtn.disabled = true;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span>' + t.submitting;
+      finalizeSubmit(pendingFormData);
+    });
+
+    function resetFormUI() {
+      pendingFormData = null;
+      clearDraftStorage_();
+      form.reset();
+      document.querySelectorAll('#serviceTypeGroup .checkbox-item').forEach(function (item) {
+        item.classList.remove('checked');
+      });
+      datePicker.clear();
+      selectedImages = [];
+      renderImagePreviews();
+      resetLocationMap();
+      refreshAvailableSlots();
+      renderDynamicFields();
+      document.getElementById('fulfillmentType').value = '';
+      renderFulfillmentFields();
+    }
+
+    function finalizeSubmit(formData) {
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'submitBooking', data: formData })
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (res) {
+          const t = I18N[currentLang];
+          submitBtn.disabled = false;
+          submitBtn.textContent = t.submitBtn;
+          if (res.success) {
+            showAlert('success', res.message);
+            resetFormUI();
+          } else {
+            showAlert('error', res.message);
+            if (res.slotTaken) {
+              refreshAvailableSlots();
+            }
+          }
+        })
+        .catch(function (err) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = I18N[currentLang].submitBtn;
+          const prefix = currentLang === 'EN' ? 'An error occurred: ' : (currentLang === 'ZH' ? '发生错误：' : 'เกิดข้อผิดพลาด: ');
+          showAlert('error', prefix + err.message);
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+
+      const formData = collectFormData();
+      const t = I18N[currentLang];
+
+      // ===== เช็คทีละฟิลด์ แล้วบอกชัดเจนว่าฟิลด์ไหนว่าง (ช่วยดีบักแทนข้อความรวมๆ) =====
+      const missingLabels = [];
+      const lblOf = {
+        serviceTypes: document.getElementById('lblServiceType').textContent,
+        contactName: document.getElementById('lblContactName').textContent,
+        phone: document.getElementById('lblPhone').textContent,
+        bookingDate: document.getElementById('lblDate').textContent,
+        bookingTime: document.getElementById('lblTime').textContent,
+        fulfillmentType: document.getElementById('lblFulfillment').textContent
+      };
+      if (formData.serviceTypes.length === 0) missingLabels.push(lblOf.serviceTypes);
+      if (!formData.contactName) missingLabels.push(lblOf.contactName);
+      if (!formData.phone) missingLabels.push(lblOf.phone);
+      if (!formData.bookingDate) missingLabels.push(lblOf.bookingDate);
+      if (!formData.bookingTime) missingLabels.push(lblOf.bookingTime);
+      if (!formData.fulfillmentType) missingLabels.push(lblOf.fulfillmentType);
+
+      if (missingLabels.length > 0) {
+        // แสดงชื่อฟิลด์ที่ขาดจริงๆ ต่อท้ายข้อความเดิม เพื่อให้เห็นสาเหตุตรงจุด
+        showAlert('error', t.requiredError + ' (' + missingLabels.join(', ') + ')');
+        console.log('[BOOKING DEBUG] missing fields:', missingLabels, 'formData:', formData);
+        return;
+      }
+
+      // ===== ผ่านการตรวจครบถ้วนแล้ว: เก็บข้อมูลไว้รอยืนยัน แล้วเปิดหน้าสรุปให้ตรวจทานก่อน =====
+      // การส่งข้อมูลจริง (finalizeSubmit) จะเกิดขึ้นก็ต่อเมื่อลูกค้ากด "ยืนยันการจอง" อีกครั้งในหน้าสรุปเท่านั้น
+      pendingFormData = formData;
+      showReviewModal_(formData);
+    });
+
+    // ===== บันทึกร่างฟอร์มอัตโนมัติด้วย localStorage =====
+    // กันลูกค้าต้องกรอกใหม่ทั้งหมดถ้าพลาดปิดแท็บหรือเน็ตหลุดกลางคัน
+    // หมายเหตุ: ไม่บันทึกรูปภาพ (selectedImages) เพราะเป็น base64 ขนาดใหญ่ อาจทำให้ localStorage เต็มได้ง่าย
+    const DRAFT_STORAGE_KEY = 'mk_booking_draft_v1';
+    const DRAFT_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // ไม่เสนอกู้คืนร่างที่เก่าเกิน 3 วัน (วันที่นัดมักจะผ่านไปแล้ว)
+    let draftSaveTimer = null;
+    let isApplyingDraft = false;
+    let cachedDraftData = null;
+    const draftBannerEl = document.getElementById('draftBanner');
+    const draftBannerSubEl = document.getElementById('draftBannerSub');
+
+    function saveDraftNow_() {
+      if (isApplyingDraft) return;
+      try {
+        const data = collectFormData();
+        delete data.images; // ไม่เก็บรูปภาพลง localStorage
+        data._savedAt = Date.now();
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.warn('[Draft] บันทึกร่างไม่สำเร็จ:', e);
+      }
+    }
+
+    function scheduleDraftSave() {
+      if (isApplyingDraft) return;
+      clearTimeout(draftSaveTimer);
+      draftSaveTimer = setTimeout(saveDraftNow_, 500);
+    }
+
+    function clearDraftStorage_() {
+      try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch (e) { /* เพิกเฉยถ้าเบราว์เซอร์บล็อก localStorage */ }
+      cachedDraftData = null;
+      draftBannerEl.classList.remove('active');
+    }
+
+    function updateDraftBannerText_() {
+      if (!cachedDraftData) return;
+      const t = I18N[currentLang];
+      const localeMap = { TH: 'th-TH', EN: 'en-US', ZH: 'zh-CN' };
+      let savedAtStr = '';
+      try {
+        savedAtStr = new Date(cachedDraftData._savedAt).toLocaleString(localeMap[currentLang] || 'en-US');
+      } catch (e) {
+        savedAtStr = new Date(cachedDraftData._savedAt).toString();
+      }
+      document.getElementById('draftBannerTitle').textContent = t.draftBannerTitle;
+      draftBannerSubEl.textContent = t.draftSavedAt(savedAtStr);
+      document.getElementById('draftRestoreBtn').textContent = t.draftRestoreBtn;
+      document.getElementById('draftDiscardBtn').textContent = t.draftDiscardBtn;
+    }
+
+    function showDraftBanner_(data) {
+      cachedDraftData = data;
+      updateDraftBannerText_();
+      draftBannerEl.classList.add('active');
+    }
+
+    /**
+     * เติมค่าฟอร์มทั้งหมดจากร่างที่บันทึกไว้ กลับเข้าไปใน field ที่ตรงกัน
+     * รวมถึงติ๊ก checkbox ประเภทบริการ, เรนเดอร์ฟิลด์เพิ่มเติม, และคืนค่าวันที่/เวลานัดที่เคยเลือกไว้
+     */
+    function applyDraftData_(data) {
+      isApplyingDraft = true;
+      try {
+        if (data.contactName) document.getElementById('contactName').value = data.contactName;
+        if (data.shopAddress) document.getElementById('shopAddress').value = data.shopAddress;
+        if (data.kitchenInfo) document.getElementById('kitchenInfo').value = data.kitchenInfo;
+        if (data.phone) document.getElementById('phone').value = data.phone;
+        if (data.customerEmail) document.getElementById('customerEmail').value = data.customerEmail;
+
+        // ติ๊ก checkbox ประเภทบริการตามที่บันทึกไว้ แล้วเรนเดอร์ฟิลด์เพิ่มเติม/ตัวเลือกบริการที่ต้องการใหม่
+        (data.serviceTypes || []).forEach(function (v) {
+          const el = document.getElementById('svc_' + v);
+          if (!el) return;
+          el.checked = true;
+          const item = el.closest('.checkbox-item');
+          if (item) item.classList.add('checked');
+        });
+        renderDynamicFields();
+        renderFulfillmentOptions(false);
+
+        // เติมค่าฟิลด์เพิ่มเติมตามประเภทบริการที่เพิ่งเรนเดอร์ใหม่ (รองรับทั้ง select/textarea/text/date)
+        (data.serviceTypes || []).forEach(function (svc) {
+          (DYNAMIC_FIELDS[svc] || []).forEach(function (f) {
+            const val = data[f.id];
+            if (!val) return;
+            const inputEl = document.getElementById(f.id);
+            if (!inputEl) return;
+            if (f.type === 'date' && inputEl._flatpickr) inputEl._flatpickr.setDate(val, true);
+            else inputEl.value = val;
+          });
+        });
+
+        // บริการที่ต้องการ (fulfillmentType) + ฟิลด์เพิ่มเติมของตัวเลือกนั้น
+        if (data.fulfillmentType) {
+          const sel = document.getElementById('fulfillmentType');
+          sel.value = data.fulfillmentType;
+          renderFulfillmentFields();
+          (FULFILLMENT_FIELDS[data.fulfillmentType] || []).forEach(function (f) {
+            const val = data[f.id];
+            if (!val) return;
+            const inputEl = document.getElementById(f.id);
+            if (!inputEl) return;
+            if (f.type === 'date' && inputEl._flatpickr) inputEl._flatpickr.setDate(val, true);
+            else inputEl.value = val;
+          });
+        }
+
+        // ตำแหน่งที่เคยปักหมุดไว้บนแผนที่
+        if (data.mapLat && data.mapLng) {
+          const lat = parseFloat(data.mapLat);
+          const lng = parseFloat(data.mapLng);
+          if (!isNaN(lat) && !isNaN(lng)) setPickedLocation(lat, lng, true);
+        }
+
+        // วันที่/เวลานัด: คืนค่าได้เฉพาะวันที่ยังไม่ผ่านไป (กันกรณีร่างเก่าเลือกวันที่ล่วงเลยมาแล้ว)
+        if (data.bookingDate) {
+          const picked = new Date(data.bookingDate + 'T00:00:00');
+          const todayCheck = new Date();
+          todayCheck.setHours(0, 0, 0, 0);
+          if (picked >= todayCheck) {
+            datePicker.setDate(data.bookingDate, false);
+            refreshAvailableSlots(data.bookingTime || '');
+          }
+        }
+      } finally {
+        isApplyingDraft = false;
+      }
+    }
+
+    function restoreDraftIfAny_() {
+      let raw;
+      try {
+        raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+      } catch (e) {
+        return; // localStorage ถูกบล็อก (เช่น โหมด private บางเบราว์เซอร์) - ข้ามฟีเจอร์นี้ไปเงียบๆ
+      }
+      if (!raw) return;
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        clearDraftStorage_();
+        return;
+      }
+      if (!data || !data._savedAt || (Date.now() - data._savedAt) > DRAFT_MAX_AGE_MS) {
+        clearDraftStorage_();
+        return;
+      }
+      // มีเนื้อหาให้กู้คืนจริงหรือเปล่า (กันกรณีร่างว่างเปล่าจากการเปิดหน้าเว็บทิ้งไว้เฉยๆ)
+      const hasContent = data.contactName || data.phone || (data.serviceTypes && data.serviceTypes.length > 0) ||
+        data.shopAddress || data.bookingDate;
+      if (!hasContent) {
+        clearDraftStorage_();
+        return;
+      }
+      showDraftBanner_(data);
+    }
+
+    document.getElementById('draftRestoreBtn').addEventListener('click', function () {
+      if (cachedDraftData) applyDraftData_(cachedDraftData);
+      draftBannerEl.classList.remove('active');
+    });
+    document.getElementById('draftDiscardBtn').addEventListener('click', function () {
+      clearDraftStorage_();
+    });
+
+    // บันทึกร่างทุกครั้งที่มีการพิมพ์/เลือกค่าในฟอร์ม (event delegation ที่ระดับฟอร์ม ครอบคลุมฟิลด์ที่เรนเดอร์ทีหลังด้วย)
+    form.addEventListener('input', scheduleDraftSave);
+    form.addEventListener('change', scheduleDraftSave);
+
+    // เริ่มต้นหน้าเว็บด้วยภาษาไทย
+    applyLanguage('TH');
+    restoreDraftIfAny_();
+  </script>
+
+  <!--Start of Tawk.to Script-->
+  <script type="text/javascript">
+  var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+
+  // ===== ซ่อน widget เริ่มต้นของ Tawk ทันทีที่โหลดเสร็จ / เปลี่ยนสถานะ เพื่อให้เหลือแค่ปุ่มลอยที่สร้างเอง (.chat-float-btn) =====
+  Tawk_API.onLoad = function(){
+    hideTawkWidget();
+  };
+  Tawk_API.onStatusChange = function(){
+    hideTawkWidget();
+  };
+
+  function hideTawkWidget(){
+    if (window.Tawk_API && Tawk_API.hideWidget) {
+      Tawk_API.hideWidget();
+    }
+  }
+
+  // ===== เผื่อ onLoad ทำงานช้ากว่าที่ widget เริ่มต้นจะโผล่ขึ้นมา: เช็คซ้ำทุก 300ms จนกว่าจะซ่อนสำเร็จ =====
+  // (หยุดเช็คเองหลัง ~9 วินาที กันลูปค้างถ้า Tawk โหลดไม่สำเร็จ)
+  var tawkHideAttempts = 0;
+  var tawkHideInterval = setInterval(function () {
+    tawkHideAttempts++;
+    if (window.Tawk_API && Tawk_API.hideWidget) {
+      Tawk_API.hideWidget();
+      clearInterval(tawkHideInterval);
+    }
+    if (tawkHideAttempts > 30) clearInterval(tawkHideInterval);
+  }, 300);
+
+  (function(){
+  var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+  s1.async=true;
+  s1.src='https://embed.tawk.to/6a83cfec273ff73441178fdc/1k09e8dk5';
+  s1.charset='UTF-8';
+  s1.setAttribute('crossorigin','*');
+  s0.parentNode.insertBefore(s1,s0);
+  })();
+  </script>
+  <!--End of Tawk.to Script-->
+</body>
+</html>
