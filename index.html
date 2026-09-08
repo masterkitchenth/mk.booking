@@ -598,19 +598,10 @@
           <div id="imagePreviewList" class="image-preview-list"></div>
         </div>
 
-        <div class="grid-2">
-          <div class="field">
-            <label><span id="lblDate">ปฏิทินเลือกวัน</span><span class="req">*</span></label>
-            <input type="text" id="bookingDate" autocomplete="off" readonly>
-          </div>
-
-          <div class="field">
-            <label><span id="lblTime">เวลาที่ต้องการให้เข้าซ่อม</span><span class="req">*</span></label>
-            <select id="bookingTime" disabled>
-              <option value="">เลือกบริการและวันที่ก่อน</option>
-            </select>
-            <div class="slot-hint" id="slotHint"></div>
-          </div>
+        <div class="field">
+          <label><span id="lblDate">ปฏิทินเลือกวัน</span><span class="req">*</span></label>
+          <input type="text" id="bookingDate" autocomplete="off" readonly>
+          <div class="slot-hint" id="slotHint"></div>
         </div>
 
         <button type="submit" class="submit-btn" id="submitBtn">ยืนยันการจอง</button>
@@ -776,6 +767,7 @@
   <script>
     /* *** แก้ URL ตรงนี้ให้เป็นลิงก์ Apps Script /exec ล่าสุดของพี่ *** */
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTtzHq7vKl5wJ_7cqOYEGAi3wgWs8scwH26J9FBPjYhoncG5AZ5wPHd80KijRFMr7d/exec';
+    const MAX_BOOKINGS_PER_DAY = 10;
 
     // ===== i18n =====
     const I18N = {
@@ -796,16 +788,15 @@
         image: 'รูปภาพ', fileDropText: 'คลิกเพื่อเลือกรูปภาพ หรือ ลากไฟล์มาวางที่นี่ (เลือกได้หลายรูป)',
         imagesSelected: function (n) { return n + ' รูปที่เลือกไว้ (คลิกเพื่อเพิ่มรูปอื่น)'; },
         dateLabel: 'ปฏิทินเลือกวัน', datePh: 'เลือกวันที่',
-        timeLabel: 'เวลาที่ต้องการให้เข้าซ่อม',
-        timeDefaultOpt: 'เลือกบริการและวันที่ก่อน', timeLoading: 'กำลังตรวจสอบคิวว่าง...',
-        timeNoSlot: 'ไม่มีคิวว่างในวันนี้', timeErr: 'เกิดข้อผิดพลาด', timePickOpt: '-- เลือกเวลา --',
-        slotRemain: function (n) { return 'เหลือ ' + n + ' ช่วงเวลาว่าง'; },
+        dateLoading: 'กำลังตรวจสอบคิววันนี้...',
+        dateFull: 'คิวเต็มแล้ว', dateErr: 'เกิดข้อผิดพลาด',
+        slotRemain: function (n) { return 'เหลือคิววันนี้อีก ' + n + ' คิว'; },
         slotPickOther: 'กรุณาเลือกวันอื่น',
-        fullyBookedMsg: 'ขออภัย คิววันที่เลือกเต็มแล้ว กรุณาเลือกวันอื่น',
+        fullyBookedMsg: 'ขออภัย คิววันที่เลือกเต็มแล้ว (รับสูงสุด ' + 10 + ' คิว/วัน) กรุณาเลือกวันอื่น',
         submitBtn: 'ยืนยันการจอง', submitting: 'กำลังบันทึก...',
         requiredError: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
-        footerNote: 'เปิดให้จองเวลา 08:00 - 17:30 น. เท่านั้น',
-        toggleLabel: 'EN', flatpickrLocale: 'th', altFormat: 'j F Y', timeSuffix: ' น.',
+        footerNote: 'รับจองสูงสุดวันละ 10 คิว',
+        toggleLabel: 'EN', flatpickrLocale: 'th', altFormat: 'j F Y',
         fulfillment: 'บริการที่ต้องการ', fulfillmentDefaultOpt: '-- เลือกบริการที่ต้องการ --',
         notSpecified: 'ไม่ระบุ',
         shipCenterAddressLabel: 'ที่อยู่ศูนย์บริการ',
@@ -817,7 +808,7 @@
         draftRestoreBtn: 'กู้คืนข้อมูล',
         draftDiscardBtn: 'ทิ้งร่างนี้',
         successTitle: 'บันทึกการจองเรียบร้อยแล้ว',
-        successSubtitle: 'ทีมงานจะติดต่อกลับตามวันและเวลาที่นัดหมาย<br><br>ลูกค้าสามารถตรวจสอบสถานะงานได้ 2 ช่องทาง:<br>• ตรวจสอบได้ที่เมนู <strong>"ตรวจสอบสถานะงาน"</strong> บริเวณมุมบนซ้ายมือ<br>• ตรวจสอบผ่านอีเมล ที่ลูกค้าได้กรอกไว้ในขั้นตอนการจอง',
+        successSubtitle: 'ทีมงานจะติดต่อกลับตามวันที่นัดหมาย<br><br>ลูกค้าสามารถตรวจสอบสถานะงานได้ 2 ช่องทาง:<br>• ตรวจสอบได้ที่เมนู <strong>"ตรวจสอบสถานะงาน"</strong> บริเวณมุมบนซ้ายมือ<br>• ตรวจสอบผ่านอีเมล ที่ลูกค้าได้กรอกไว้ในขั้นตอนการจอง',
         successCodeLabel: 'รหัสการจองของคุณคือ',
         successCopyBtn: 'คัดลอกรหัส',
         successCopied: 'คัดลอกแล้ว!',
@@ -840,7 +831,6 @@
         statusGenericError: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
         statusContactName: 'ชื่อผู้จอง',
         statusAppointmentDate: 'วันที่นัดหมาย',
-        statusAppointmentTime: 'เวลานัดหมาย',
         statusStep1: 'ยืนยันใบเสนอราคา',
         statusStep2: 'ยืนยันนัดหมาย',
         statusStep3: 'ช่างดำเนินการ',
@@ -863,16 +853,15 @@
         image: 'Photo', fileDropText: 'Click to select images, or drag & drop here (multiple allowed)',
         imagesSelected: function (n) { return n + ' image(s) selected (click to add more)'; },
         dateLabel: 'Select Date', datePh: 'Select a date',
-        timeLabel: 'Preferred Service Time',
-        timeDefaultOpt: 'Select service & date first', timeLoading: 'Checking available slots...',
-        timeNoSlot: 'No slots available on this date', timeErr: 'An error occurred', timePickOpt: '-- Select time --',
-        slotRemain: function (n) { return n + ' slot(s) remaining'; },
+        dateLoading: 'Checking today\'s availability...',
+        dateFull: 'Fully booked', dateErr: 'An error occurred',
+        slotRemain: function (n) { return n + ' slot(s) remaining today'; },
         slotPickOther: 'Please choose another date',
-        fullyBookedMsg: 'Sorry, this date is fully booked. Please select another date.',
+        fullyBookedMsg: 'Sorry, this date is fully booked (max 10 bookings/day). Please select another date.',
         submitBtn: 'Confirm Booking', submitting: 'Saving...',
         requiredError: 'Please fill in all required fields',
-        footerNote: 'Bookings available 08:00 - 17:30 only',
-        toggleLabel: 'ไทย', flatpickrLocale: 'default', altFormat: 'F j, Y', timeSuffix: '',
+        footerNote: 'Maximum 10 bookings per day',
+        toggleLabel: 'ไทย', flatpickrLocale: 'default', altFormat: 'F j, Y',
         fulfillment: 'Service Fulfillment', fulfillmentDefaultOpt: '-- Select fulfillment option --',
         notSpecified: 'Not specified',
         shipCenterAddressLabel: 'Service Center Address',
@@ -884,7 +873,7 @@
         draftRestoreBtn: 'Restore Draft',
         draftDiscardBtn: 'Discard',
         successTitle: 'Booking Confirmed',
-        successSubtitle: 'Our team will contact you around the scheduled date and time.<br><br>You can check your job status in 2 ways:<br>• Tap the <strong>"Check Status"</strong> menu in the top-left corner<br>• Check via the email address you provided during booking',
+        successSubtitle: 'Our team will contact you around the scheduled date.<br><br>You can check your job status in 2 ways:<br>• Tap the <strong>"Check Status"</strong> menu in the top-left corner<br>• Check via the email address you provided during booking',
         successCodeLabel: 'Your booking code is',
         successCopyBtn: 'Copy Code',
         successCopied: 'Copied!',
@@ -907,7 +896,6 @@
         statusGenericError: 'An error occurred. Please try again.',
         statusContactName: 'Customer Name',
         statusAppointmentDate: 'Appointment Date',
-        statusAppointmentTime: 'Appointment Time',
         statusStep1: 'Quote Confirmed',
         statusStep2: 'Appointment Confirmed',
         statusStep3: 'Technician In Progress',
@@ -930,16 +918,15 @@
         image: '照片', fileDropText: '点击选择图片，或将文件拖放到此处（可选择多张）',
         imagesSelected: function (n) { return '已选择 ' + n + ' 张图片（点击可继续添加）'; },
         dateLabel: '选择日期', datePh: '请选择日期',
-        timeLabel: '希望服务时间',
-        timeDefaultOpt: '请先选择服务类型和日期', timeLoading: '正在查询可用时段...',
-        timeNoSlot: '当天没有可用时段', timeErr: '发生错误', timePickOpt: '-- 请选择时间 --',
-        slotRemain: function (n) { return '剩余 ' + n + ' 个时段'; },
+        dateLoading: '正在查询今日名额...',
+        dateFull: '名额已满', dateErr: '发生错误',
+        slotRemain: function (n) { return '今日剩余 ' + n + ' 个名额'; },
         slotPickOther: '请选择其他日期',
-        fullyBookedMsg: '抱歉，所选日期预约已满，请选择其他日期。',
+        fullyBookedMsg: '抱歉，所选日期预约已满（每日最多10个名额），请选择其他日期。',
         submitBtn: '确认预约', submitting: '正在保存...',
         requiredError: '请填写所有必填项目',
-        footerNote: '仅开放 08:00 - 17:30 预约',
-        toggleLabel: '', flatpickrLocale: 'zh', altFormat: 'Y年n月j日', timeSuffix: '',
+        footerNote: '每日最多接受10个预约',
+        toggleLabel: '', flatpickrLocale: 'zh', altFormat: 'Y年n月j日',
         fulfillment: '所需服务方式', fulfillmentDefaultOpt: '-- 请选择所需服务方式 --',
         notSpecified: '未填写',
         shipCenterAddressLabel: '服务中心地址',
@@ -951,7 +938,7 @@
         draftRestoreBtn: '恢复草稿',
         draftDiscardBtn: '放弃草稿',
         successTitle: '预约已成功保存',
-        successSubtitle: '我们的团队将在预约的日期和时间与您联系。<br><br>您可以通过以下两种方式查询工作状态：<br>• 点击左上角的 <strong>"查询状态"</strong> 菜单<br>• 通过您预约时填写的电子邮箱查询',
+        successSubtitle: '我们的团队将在预约日期与您联系。<br><br>您可以通过以下两种方式查询工作状态：<br>• 点击左上角的 <strong>"查询状态"</strong> 菜单<br>• 通过您预约时填写的电子邮箱查询',
         successCodeLabel: '您的预约编号是',
         successCopyBtn: '复制编号',
         successCopied: '已复制！',
@@ -974,7 +961,6 @@
         statusGenericError: '发生错误，请重试。',
         statusContactName: '预约人姓名',
         statusAppointmentDate: '预约日期',
-        statusAppointmentTime: '预约时间',
         statusStep1: '确认报价',
         statusStep2: '确认预约',
         statusStep3: '技师处理中',
@@ -1132,15 +1118,6 @@
         {
           id: 'preferredServiceDate', type: 'date',
           label: { TH: 'วันที่เข้าบริการ (Preferred Service Date)', EN: 'Preferred Service Date', ZH: '希望服务日期' }
-        },
-        {
-          id: 'preferredServiceTimeRange', type: 'select',
-          label: { TH: 'ช่วงเวลาที่ต้องการเข้าบริการ', EN: 'Preferred Service Time', ZH: '希望服务时间段' },
-          options: [
-            { value: 'MORNING', label: { TH: 'ช่วงเช้า (08:00 - 12:00)', EN: 'Morning (08:00 - 12:00)', ZH: '上午（08:00 - 12:00）' } },
-            { value: 'AFTERNOON', label: { TH: 'ช่วงบ่าย (12:00 - 17:30)', EN: 'Afternoon (12:00 - 17:30)', ZH: '下午（12:00 - 17:30）' } },
-            { value: 'FULL_DAY', label: { TH: 'ได้ทั้งวัน', EN: 'Any time / full day', ZH: '全天均可' } }
-          ]
         }
       ],
       SHIP_TO_CENTER: []
@@ -1159,7 +1136,6 @@
 
     const serviceTypeGroupEl = document.getElementById('serviceTypeGroup');
     const bookingDateEl = document.getElementById('bookingDate');
-    const bookingTimeEl = document.getElementById('bookingTime');
     const slotHint = document.getElementById('slotHint');
     const form = document.getElementById('bookingForm');
     const submitBtn = document.getElementById('submitBtn');
@@ -1199,7 +1175,7 @@
 
     const datePicker = flatpickr('#bookingDate', {
       dateFormat: 'Y-m-d', altInput: true, altFormat: I18N.TH.altFormat, minDate: today, disableMobile: true,
-      onChange: function () { refreshAvailableSlots(); }
+      onChange: function () { checkDailyAvailability(); }
     });
 
     // ===== แผนที่ปักหมุดตำแหน่งร้าน/จุดที่ต้องการให้เข้าบริการ (Leaflet + OpenStreetMap) =====
@@ -1365,7 +1341,6 @@
       if (e.target && e.target.type === 'checkbox') {
         const item = e.target.closest('.checkbox-item');
         if (item) item.classList.toggle('checked', e.target.checked);
-        refreshAvailableSlots();
         renderDynamicFields();
         // ===== ติ๊ก/ถอดติ๊กประเภทบริการ อาจทำให้ตัวเลือก SHIP_TO_CENTER ต้องถูกซ่อน/แสดงใหม่ =====
         renderFulfillmentOptions(true);
@@ -1602,7 +1577,6 @@
       fileDropText.textContent = selectedImages.length > 0 ? t.imagesSelected(selectedImages.length) : t.fileDropText;
       document.getElementById('lblDate').textContent = t.dateLabel;
       bookingDateEl.placeholder = t.datePh;
-      document.getElementById('lblTime').textContent = t.timeLabel;
       document.getElementById('footerNote').textContent = t.footerNote;
       submitBtn.textContent = t.submitBtn;
       document.querySelectorAll('.lang-opt').forEach(function (b) {
@@ -1613,7 +1587,7 @@
       datePicker.set('altFormat', t.altFormat);
 
       renderServiceTypeCheckboxes(true);
-      refreshAvailableSlots();
+      checkDailyAvailability();
       renderDynamicFields();
       renderFulfillmentOptions(true);
       renderFulfillmentFields();
@@ -1716,7 +1690,7 @@
 
     /**
      * เรนเดอร์แถวข้อมูลสรุป + stepper ความคืบหน้า จากผลลัพธ์ที่ backend ส่งกลับมา
-     * res ที่คาดหวัง: { contactName, serviceTypes: [...], fulfillmentType, bookingDate, bookingTime, statusStep: 1-4 }
+     * res ที่คาดหวัง: { contactName, serviceTypes: [...], fulfillmentType, bookingDate, statusStep: 1-4 }
      */
     function renderStatusResult_(res) {
       const lang = currentLang;
@@ -1735,7 +1709,6 @@
       if (fm) rows.push({ label: t.fulfillment, value: fm.label[lang] });
 
       if (res.bookingDate) rows.push({ label: t.statusAppointmentDate, value: formatDateDisplay_(res.bookingDate, lang) });
-      if (res.bookingTime) rows.push({ label: t.statusAppointmentTime, value: res.bookingTime + t.timeSuffix });
 
       statusResultRows.innerHTML = '';
       rows.forEach(function (r) {
@@ -1898,83 +1871,58 @@
         });
     });
 
-    function refreshAvailableSlots(forcedPreviousTime) {
+    /**
+     * ===== เช็คจำนวนคิวที่จองไว้แล้วของวันที่เลือก เทียบกับเพดาน MAX_BOOKINGS_PER_DAY =====
+     * เรียก Apps Script ด้วย action=getAvailableSlots (คงชื่อ action เดิมไว้เพื่อความเข้ากันได้กับ backend เดิม)
+     * ฝั่ง backend ควรตอบกลับจำนวนคิวคงเหลือของวันนั้น (ตัวเลข) หรือ 0/error เมื่อเต็ม
+     */
+    function checkDailyAvailability() {
       const t = I18N[currentLang];
-      const selected = getSelectedServiceTypes();
       const date = bookingDateEl.value;
 
-      // ===== เก็บเวลาที่ผู้ใช้เคยเลือกไว้ก่อนรีเซ็ต dropdown =====
-      // (กันปัญหาเวลาที่เคยเลือกหายไปเงียบๆ ทุกครั้งที่ติ๊ก/ถอดติ๊กประเภทบริการ)
-      // ถ้ามีการส่ง forcedPreviousTime เข้ามา (เช่นตอนกู้คืนร่างข้อมูล) จะใช้ค่านั้นแทนค่าที่ dropdown มีอยู่ตอนนี้
-      const previousTime = forcedPreviousTime !== undefined ? forcedPreviousTime : bookingTimeEl.value;
-
-      bookingTimeEl.innerHTML = '';
-      slotHint.textContent = '';
-
-      if (selected.length === 0 || !date) {
-        bookingTimeEl.disabled = true;
-        const opt = document.createElement('option');
-        opt.value = ''; opt.textContent = t.timeDefaultOpt;
-        bookingTimeEl.appendChild(opt);
+      if (!date) {
+        slotHint.textContent = '';
         return;
       }
 
-      bookingTimeEl.disabled = true;
-      const loadingOpt = document.createElement('option');
-      loadingOpt.value = ''; loadingOpt.textContent = t.timeLoading;
-      bookingTimeEl.appendChild(loadingOpt);
+      slotHint.textContent = t.dateLoading;
 
-      const url = APPS_SCRIPT_URL + '?action=getAvailableSlots&serviceTypes=' + encodeURIComponent(selected.join(',')) + '&date=' + encodeURIComponent(date);
+      const url = APPS_SCRIPT_URL + '?action=getAvailableSlots&date=' + encodeURIComponent(date) +
+        '&maxPerDay=' + MAX_BOOKINGS_PER_DAY;
 
       fetch(url)
         .then(function (res) { return res.json(); })
-        .then(function (slots) {
+        .then(function (res) {
           const t2 = I18N[currentLang];
-          bookingTimeEl.innerHTML = '';
-          if (!slots || slots.error || slots.length === 0) {
-            const opt = document.createElement('option');
-            opt.value = ''; opt.textContent = t2.timeNoSlot;
-            bookingTimeEl.appendChild(opt);
-            bookingTimeEl.disabled = true;
-            slotHint.textContent = t2.slotPickOther;
+          // รองรับได้ทั้งรูปแบบ { remaining: n } และตัวเลข/array แบบเดิม เผื่อ backend ยังไม่ได้อัปเดต
+          let remaining;
+          if (res && typeof res.remaining === 'number') {
+            remaining = res.remaining;
+          } else if (Array.isArray(res)) {
+            remaining = res.length; // รูปแบบเดิม: array ของช่วงเวลาที่ว่าง -> ใช้จำนวนเป็นตัวแทนคิวคงเหลือ
+          } else if (typeof res === 'number') {
+            remaining = res;
+          } else {
+            remaining = null;
+          }
 
-            // ===== วันนี้คิวเต็มแล้ว: ขึ้น alert แดงแจ้งขออภัยให้เห็นชัดเจนทันที =====
-            // (ไม่ขึ้นซ้ำถ้าเป็น error จาก slots.error เพราะกรณีนั้นเป็นข้อผิดพลาดของระบบ ไม่ใช่คิวเต็ม)
-            if (!slots || !slots.error) {
-              showAlert('error', t2.fullyBookedMsg);
-            }
+          if (remaining === null || (res && res.error)) {
+            slotHint.textContent = t2.dateErr;
             return;
           }
 
-          // มีคิวว่าง: ซ่อน alert เดิม (ถ้าเคยขึ้นว่าคิวเต็มจากการเช็ควันก่อนหน้า)
-          alertBox.style.display = 'none';
-
-          const placeholder = document.createElement('option');
-          placeholder.value = ''; placeholder.textContent = t2.timePickOpt;
-          bookingTimeEl.appendChild(placeholder);
-          slots.forEach(function (s) {
-            const opt = document.createElement('option');
-            opt.value = s; opt.textContent = s + t2.timeSuffix;
-            bookingTimeEl.appendChild(opt);
-          });
-          bookingTimeEl.disabled = false;
-          slotHint.textContent = t2.slotRemain(slots.length);
-
-          // ===== ถ้าเวลาที่เคยเลือกไว้ยังว่างอยู่ในรายการใหม่ ให้เลือกคืนให้อัตโนมัติ =====
-          if (previousTime && slots.indexOf(previousTime) > -1) {
-            bookingTimeEl.value = previousTime;
-          } else if (previousTime) {
-            // เวลาที่เคยเลือกไว้ไม่ว่างแล้ว แจ้งเตือนผู้ใช้ให้เลือกใหม่แทนที่จะปล่อยให้หายเงียบๆ
-            slotHint.textContent = t2.slotRemain(slots.length) +
-              (currentLang === 'EN' ? ' — your previous time is no longer available, please pick again.' :
-               currentLang === 'ZH' ? ' — 您之前选择的时间已不可用，请重新选择。' :
-               ' — เวลาที่เคยเลือกไว้ไม่ว่างแล้ว กรุณาเลือกใหม่');
+          if (remaining <= 0) {
+            slotHint.textContent = t2.dateFull;
+            alertBox.style.display = 'none';
+            showAlert('error', t2.fullyBookedMsg);
+          } else {
+            alertBox.style.display = 'none';
+            slotHint.textContent = t2.slotRemain(remaining);
           }
         })
-        .catch(function (err) {
+        .catch(function () {
           const t2 = I18N[currentLang];
-          bookingTimeEl.innerHTML = '<option value="">' + t2.timeErr + '</option>';
-          slotHint.textContent = err.message || t2.timeErr;
+          slotHint.textContent = t2.dateErr;
         });
     }
 
@@ -2071,10 +2019,10 @@
         phone: document.getElementById('phone').value.trim(),
         customerEmail: document.getElementById('customerEmail').value.trim(),
         bookingDate: bookingDateEl.value,
-        bookingTime: bookingTimeEl.value,
         images: selectedImages, // ===== ส่งรูปทั้งหมดเป็น array [{base64, fileName, mimeType}, ...] =====
         customerType: customerType,
-        language: currentLang
+        language: currentLang,
+        maxBookingsPerDay: MAX_BOOKINGS_PER_DAY // ===== ส่งเพดานไปให้ backend ยึดตรวจซ้ำอีกชั้นตอนบันทึกจริง =====
       };
       let extraFields = [];
       selected.forEach(function (svc) {
@@ -2177,7 +2125,6 @@
       });
       if (formData.kitchenInfo) rows.push({ label: t.kitchenInfo, value: formData.kitchenInfo });
       rows.push({ label: t.dateLabel, value: formatDateDisplay_(formData.bookingDate, lang) });
-      rows.push({ label: t.timeLabel, value: formData.bookingTime + t.timeSuffix });
       return rows;
     }
 
@@ -2455,7 +2402,7 @@
       selectedImages = [];
       renderImagePreviews();
       resetLocationMap();
-      refreshAvailableSlots();
+      slotHint.textContent = '';
       renderDynamicFields();
       document.getElementById('fulfillmentType').value = '';
       renderFulfillmentFields();
@@ -2480,7 +2427,7 @@
           } else {
             showAlert('error', res.message);
             if (res.slotTaken) {
-              refreshAvailableSlots();
+              checkDailyAvailability();
             }
           }
         })
@@ -2506,14 +2453,12 @@
         contactName: document.getElementById('lblContactName').textContent,
         phone: document.getElementById('lblPhone').textContent,
         bookingDate: document.getElementById('lblDate').textContent,
-        bookingTime: document.getElementById('lblTime').textContent,
         fulfillmentType: document.getElementById('lblFulfillment').textContent
       };
       if (formData.serviceTypes.length === 0) missingLabels.push(lblOf.serviceTypes);
       if (!formData.contactName) missingLabels.push(lblOf.contactName);
       if (!formData.phone) missingLabels.push(lblOf.phone);
       if (!formData.bookingDate) missingLabels.push(lblOf.bookingDate);
-      if (!formData.bookingTime) missingLabels.push(lblOf.bookingTime);
       if (!formData.fulfillmentType) missingLabels.push(lblOf.fulfillmentType);
 
       if (missingLabels.length > 0) {
@@ -2588,7 +2533,7 @@
 
     /**
      * เติมค่าฟอร์มทั้งหมดจากร่างที่บันทึกไว้ กลับเข้าไปใน field ที่ตรงกัน
-     * รวมถึงติ๊ก checkbox ประเภทบริการ, เรนเดอร์ฟิลด์เพิ่มเติม, และคืนค่าวันที่/เวลานัดที่เคยเลือกไว้
+     * รวมถึงติ๊ก checkbox ประเภทบริการ, เรนเดอร์ฟิลด์เพิ่มเติม, และคืนค่าวันที่ที่เคยเลือกไว้
      */
     function applyDraftData_(data) {
       isApplyingDraft = true;
@@ -2644,14 +2589,14 @@
           if (!isNaN(lat) && !isNaN(lng)) setPickedLocation(lat, lng, true);
         }
 
-        // วันที่/เวลานัด: คืนค่าได้เฉพาะวันที่ยังไม่ผ่านไป (กันกรณีร่างเก่าเลือกวันที่ล่วงเลยมาแล้ว)
+        // วันที่นัด: คืนค่าได้เฉพาะวันที่ยังไม่ผ่านไป (กันกรณีร่างเก่าเลือกวันที่ล่วงเลยมาแล้ว)
         if (data.bookingDate) {
           const picked = new Date(data.bookingDate + 'T00:00:00');
           const todayCheck = new Date();
           todayCheck.setHours(0, 0, 0, 0);
           if (picked >= todayCheck) {
             datePicker.setDate(data.bookingDate, false);
-            refreshAvailableSlots(data.bookingTime || '');
+            checkDailyAvailability();
           }
         }
       } finally {
