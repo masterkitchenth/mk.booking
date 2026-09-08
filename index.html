@@ -817,7 +817,7 @@
         draftRestoreBtn: 'กู้คืนข้อมูล',
         draftDiscardBtn: 'ทิ้งร่างนี้',
         successTitle: 'บันทึกการจองเรียบร้อยแล้ว',
-        successSubtitle: 'ทีมงานจะติดต่อกลับตามวันและเวลาที่นัดหมาย',
+        successSubtitle: 'ทีมงานจะติดต่อกลับตามวันและเวลาที่นัดหมาย<br><br>ลูกค้าสามารถตรวจสอบสถานะงานได้ 2 ช่องทาง:<br>• ตรวจสอบได้ที่เมนู <strong>"ตรวจสอบสถานะงาน"</strong> บริเวณมุมบนซ้ายมือ<br>• ตรวจสอบผ่านอีเมล ที่ลูกค้าได้กรอกไว้ในขั้นตอนการจอง',
         successCodeLabel: 'รหัสการจองของคุณคือ',
         successCopyBtn: 'คัดลอกรหัส',
         successCopied: 'คัดลอกแล้ว!',
@@ -884,7 +884,7 @@
         draftRestoreBtn: 'Restore Draft',
         draftDiscardBtn: 'Discard',
         successTitle: 'Booking Confirmed',
-        successSubtitle: 'Our team will contact you around the scheduled date and time.',
+        successSubtitle: 'Our team will contact you around the scheduled date and time.<br><br>You can check your job status in 2 ways:<br>• Tap the <strong>"Check Status"</strong> menu in the top-left corner<br>• Check via the email address you provided during booking',
         successCodeLabel: 'Your booking code is',
         successCopyBtn: 'Copy Code',
         successCopied: 'Copied!',
@@ -951,7 +951,7 @@
         draftRestoreBtn: '恢复草稿',
         draftDiscardBtn: '放弃草稿',
         successTitle: '预约已成功保存',
-        successSubtitle: '我们的团队将在预约的日期和时间与您联系。',
+        successSubtitle: '我们的团队将在预约的日期和时间与您联系。<br><br>您可以通过以下两种方式查询工作状态：<br>• 点击左上角的 <strong>"查询状态"</strong> 菜单<br>• 通过您预约时填写的电子邮箱查询',
         successCodeLabel: '您的预约编号是',
         successCopyBtn: '复制编号',
         successCopied: '已复制！',
@@ -2254,7 +2254,7 @@
     function applySuccessLanguage_() {
       const t = I18N[currentLang];
       document.getElementById('successTitle').textContent = t.successTitle;
-      document.getElementById('successSubtitle').textContent = t.successSubtitle;
+      document.getElementById('successSubtitle').innerHTML = t.successSubtitle;
       document.getElementById('successCodeLabel').textContent = t.successCodeLabel;
       successCloseBtn.textContent = t.successCloseBtn;
       if (!successCopyBtn.classList.contains('copied')) {
