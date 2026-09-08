@@ -1654,6 +1654,12 @@
     // ผลลัพธ์ล่าสุดที่ค้นเจอ เก็บไว้เพื่อเรนเดอร์ใหม่ได้ทันทีถ้าลูกค้าสลับภาษาขณะดูผลอยู่
     let lastStatusResult = null;
 
+    // ===== Auto-refresh: เก็บค่าที่ค้นล่าสุด + ตัว timer เพื่อ poll สถานะซ้ำอัตโนมัติทุก 20 วิ =====
+    let lastCheckedBookingCode = '';
+    let lastCheckedPhoneLast4 = '';
+    let statusAutoRefreshTimer = null;
+    const STATUS_AUTO_REFRESH_MS = 20000; // 20 วินาที
+
     // 4 ขั้นตอนความคืบหน้าของงาน (คงที่ทุกประเภทบริการ) - ป้ายกำกับจะถูกดึงจาก I18N ตอนเรนเดอร์
     const STATUS_STEP_KEYS = ['statusStep1', 'statusStep2', 'statusStep3', 'statusStep4'];
 
@@ -1666,6 +1672,7 @@
     function closeStatusPage_() {
       statusPageOverlay.classList.remove('active');
       document.body.style.overflow = '';
+      stopStatusAutoRefresh_(); // ปิดหน้าแล้วหยุดถามซ้ำเบื้องหลัง ไม่จำเป็นต้องยิง request ทิ้งไปเปล่าๆ
     }
 
     statusCheckBtn.addEventListener('click', openStatusPage_);
@@ -1808,11 +1815,48 @@
       statusResultCard.classList.add('active');
     }
 
+        /**
+     * ดึงสถานะซ้ำแบบเงียบๆ (ไม่โชว์ spinner ไม่ขึ้น error banner) ใช้สำหรับ auto-refresh เบื้องหลัง
+     * ถ้าดึงไม่สำเร็จ (เช่นเน็ตหลุดชั่วคราว) จะเงียบไว้ก่อน แล้วลองใหม่รอบถัดไปแทน ไม่รบกวนลูกค้า
+     */
+    function pollStatusQuietly_() {
+      if (!lastCheckedBookingCode || lastCheckedPhoneLast4.length !== 4) return;
+
+      const url = APPS_SCRIPT_URL + '?action=checkBookingStatus&bookingCode=' + encodeURIComponent(lastCheckedBookingCode) +
+        '&phoneLast4=' + encodeURIComponent(lastCheckedPhoneLast4);
+
+      fetch(url)
+        .then(function (res) { return res.json(); })
+        .then(function (res) {
+          if (res && res.success) {
+            lastStatusResult = res;
+            renderStatusResult_(res);
+          }
+          // ถ้า res.success เป็น false (เช่นข้อมูลถูกลบไปแล้ว) ปล่อยผลลัพธ์เดิมค้างไว้ ไม่ต้อง alert รบกวน
+        })
+        .catch(function () {
+          // เงียบไว้ ลองใหม่รอบถัดไปแทน
+        });
+    }
+
+    function startStatusAutoRefresh_() {
+      stopStatusAutoRefresh_();
+      statusAutoRefreshTimer = setInterval(pollStatusQuietly_, STATUS_AUTO_REFRESH_MS);
+    }
+
+    function stopStatusAutoRefresh_() {
+      if (statusAutoRefreshTimer) {
+        clearInterval(statusAutoRefreshTimer);
+        statusAutoRefreshTimer = null;
+      }
+    }
+
     statusCheckForm.addEventListener('submit', function (e) {
       e.preventDefault();
       hideStatusAlert_();
       statusResultCard.classList.remove('active');
       lastStatusResult = null;
+      stopStatusAutoRefresh_();
 
       const t = I18N[currentLang];
       const bookingCode = statusBookingCodeEl.value.trim();
@@ -1838,6 +1882,10 @@
           if (res && res.success) {
             lastStatusResult = res;
             renderStatusResult_(res);
+            // ===== เก็บค่าไว้ + เริ่ม auto-refresh เบื้องหลัง ตราบใดที่หน้านี้ยังเปิดอยู่ =====
+            lastCheckedBookingCode = bookingCode;
+            lastCheckedPhoneLast4 = phoneLast4;
+            startStatusAutoRefresh_();
           } else {
             showStatusAlert_('error', (res && res.message) ? res.message : t2.statusNotFound);
           }
