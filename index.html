@@ -2456,10 +2456,16 @@
         fulfillmentType: document.getElementById('lblFulfillment').textContent
       };
       if (formData.serviceTypes.length === 0) missingLabels.push(lblOf.serviceTypes);
-      if (!formData.contactName) missingLabels.push(lblOf.contactName);
-      if (!formData.phone) missingLabels.push(lblOf.phone);
-      if (!formData.bookingDate) missingLabels.push(lblOf.bookingDate);
-      if (!formData.fulfillmentType) missingLabels.push(lblOf.fulfillmentType);
+if (!formData.contactName) missingLabels.push(lblOf.contactName);
+if (!formData.phone) missingLabels.push(lblOf.phone);
+if (!formData.bookingDate) missingLabels.push(lblOf.bookingDate);
+if (!formData.fulfillmentType) missingLabels.push(lblOf.fulfillmentType);
+
+// ===== เมื่อเลือก "ส่งช่างไปตามจังหวัด" ต้องมีอย่างน้อยหนึ่งอย่าง: ที่อยู่ของร้าน หรือ ปักหมุดตำแหน่งสำเร็จ =====
+// กันเคส auto-fill ที่อยู่จากแผนที่ล้มเหลว (Nominatim หา address ไม่เจอ/rate limit) แล้วปล่อยผ่านแบบไม่มีที่อยู่เลย
+if (formData.fulfillmentType === 'PROVINCE_ONSITE' && !formData.shopAddress && !(formData.mapLat && formData.mapLng)) {
+  missingLabels.push(document.getElementById('lblShopAddress').textContent);
+}
 
       if (missingLabels.length > 0) {
         // แสดงชื่อฟิลด์ที่ขาดจริงๆ ต่อท้ายข้อความเดิม เพื่อให้เห็นสาเหตุตรงจุด
