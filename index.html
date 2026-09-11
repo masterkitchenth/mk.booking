@@ -537,7 +537,7 @@
 
         <div id="dynamicFields"></div>
 
-        <div class="field">
+        <div class="field" id="fulfillmentWrap">
           <label><span id="lblFulfillment">บริการที่ต้องการ</span><span class="req">*</span></label>
           <select id="fulfillmentType">
             <option value="">-- เลือกบริการที่ต้องการ --</option>
@@ -1617,6 +1617,7 @@ const savedValues = {};
       });
 
       updateSharedAddressVisibility_();
+      updateFulfillmentVisibility_();
     }
 
     // ===== ประเภทบริการที่ไม่รองรับตัวเลือก "ส่งเครื่องอุปกรณ์ไปยังศูนย์บริการ" (ต้องมีช่างไปหน้างานจริง) =====
@@ -1628,6 +1629,18 @@ const savedValues = {};
       return !selected.some(function (s) { return FULFILLMENT_RESTRICTED_SERVICE_TYPES.indexOf(s) > -1; });
     }
 
+    // ===== ย้ายร้านต้องมีช่างไปหน้างานอยู่แล้ว (ถอด+ติดตั้ง) จึงไม่ต้องให้เลือก "บริการที่ต้องการ" ซ้ำ =====
+    function isRelocationSelected_() {
+      return getSelectedServiceTypes().indexOf('RESTAURANT_RELOCATION') > -1;
+    }
+
+    function updateFulfillmentVisibility_() {
+      const hide = isRelocationSelected_();
+      const wrap = document.getElementById('fulfillmentWrap');
+      const fields = document.getElementById('fulfillmentFields');
+      if (wrap) wrap.style.display = hide ? 'none' : '';
+      if (fields) fields.style.display = hide ? 'none' : '';
+    }
     // เรนเดอร์ตัวเลือกใน dropdown "บริการที่ต้องการ" (คงค่าที่เลือกไว้เดิมได้ตอนสลับภาษา)
     // ถ้าติ๊กประเภทบริการที่ไม่รองรับ SHIP_TO_CENTER ไว้ จะซ่อนตัวเลือกนั้นออกจากรายการ
     function renderFulfillmentOptions(preserveValue) {
@@ -2227,7 +2240,7 @@ const savedValues = {};
         }
       });
 
-      const fulfillment = document.getElementById('fulfillmentType').value;
+      const fulfillment = isRelocationSelected_() ? 'DEDICATED_TECH' : document.getElementById('fulfillmentType').value;
       data.fulfillmentType = fulfillment;
       const fFields = FULFILLMENT_FIELDS[fulfillment] || [];
       fFields.forEach(function (f) {
@@ -2289,24 +2302,27 @@ const savedValues = {};
         });
       });
 
-      const fm = FULFILLMENT_TYPES.find(function (f) { return f.value === formData.fulfillmentType; });
-      rows.push({ label: t.fulfillment, value: fm ? fm.label[lang] : t.notSpecified });
+      const isRelocationReview = (formData.serviceTypes || []).indexOf('RESTAURANT_RELOCATION') > -1;
+      if (!isRelocationReview) {
+        const fm = FULFILLMENT_TYPES.find(function (f) { return f.value === formData.fulfillmentType; });
+        rows.push({ label: t.fulfillment, value: fm ? fm.label[lang] : t.notSpecified });
 
-      if (formData.fulfillmentType === 'SHIP_TO_CENTER') {
-        rows.push({ label: t.shipCenterAddressLabel, value: MK_WAREHOUSE_ADDRESS });
-      } else {
-        (FULFILLMENT_FIELDS[formData.fulfillmentType] || []).forEach(function (f) {
-          const raw = formData[f.id];
-          if (!raw) return;
-          let val = raw;
-          if (f.type === 'select') {
-            const opt = f.options.find(function (o) { return o.value === raw; });
-            val = opt ? opt.label[lang] : raw;
-          } else if (f.type === 'date') {
-            val = formatDateDisplay_(raw, lang);
-          }
-          rows.push({ label: f.label[lang], value: val });
-        });
+        if (formData.fulfillmentType === 'SHIP_TO_CENTER') {
+          rows.push({ label: t.shipCenterAddressLabel, value: MK_WAREHOUSE_ADDRESS });
+        } else {
+          (FULFILLMENT_FIELDS[formData.fulfillmentType] || []).forEach(function (f) {
+            const raw = formData[f.id];
+            if (!raw) return;
+            let val = raw;
+            if (f.type === 'select') {
+              const opt = f.options.find(function (o) { return o.value === raw; });
+              val = opt ? opt.label[lang] : raw;
+            } else if (f.type === 'date') {
+              val = formatDateDisplay_(raw, lang);
+            }
+            rows.push({ label: f.label[lang], value: val });
+          });
+        }
       }
 
       rows.push({ label: t.contactName, value: formData.contactName || t.notSpecified });
