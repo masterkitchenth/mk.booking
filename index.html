@@ -551,16 +551,16 @@
           <input type="text" id="contactName" required>
         </div>
 
-        <div class="field">
-          <label id="lblShopAddress">ที่อยู่ของร้าน</label>
-          <textarea id="shopAddress"></textarea>
+        <div class="field" id="sharedAddressWrap">
+        <label id="lblShopAddress">ที่อยู่ของร้าน</label>
+        <textarea id="shopAddress"></textarea>
         </div>
 
         <!-- ===== ฟิลด์แผนที่: ให้ลูกค้าปักหมุดตำแหน่งร้าน/จุดที่ต้องการให้เข้าบริการ =====
              ใช้ Leaflet + OpenStreetMap (ไม่ต้องใช้ Google Maps API key)
              พิกัดที่ได้ (lat/lng) จะถูกส่งไปพร้อมฟอร์ม แล้วแปลงเป็นลิงก์ Google Maps นำทางในอีเมลแจ้งทีมงาน ===== -->
-        <div class="field map-field-wrap">
-          <label><span id="lblMap">ปักหมุดตำแหน่งร้าน (แผนที่)</span></label>
+        <div class="field map-field-wrap" id="sharedMapWrap">
+            <label><span id="lblMap">ปักหมุดตำแหน่งร้าน (แผนที่)</span></label>
           <div class="map-container" id="locationMap"></div>
           <div class="map-toolbar">
             <button type="button" class="map-locate-btn" id="mapLocateBtn">
@@ -1034,16 +1034,16 @@
           label: { TH: 'วันที่คาดว่าจะเปิดร้าน', EN: 'Expected Opening Date', ZH: '预计开业日期' }
         }
       ],
-      RESTAURANT_RELOCATION: [
+    RESTAURANT_RELOCATION: [
         {
-          id: 'oldAddress', type: 'textarea',
+          id: 'oldAddress', type: 'addressMap',
           label: { TH: 'ที่อยู่เดิม', EN: 'Current Address', ZH: '原地址' },
-          placeholder: { TH: 'ที่อยู่ร้านปัจจุบัน', EN: 'Current shop address', ZH: '目前店铺地址' }
+          placeholder: { TH: 'พิมพ์ที่อยู่ หรือปักหมุดบนแผนที่ด้านล่าง', EN: 'Type an address or pin it on the map below', ZH: '请输入地址，或在下方地图上标记位置' }
         },
         {
-          id: 'newAddress', type: 'textarea',
+          id: 'newAddress', type: 'addressMap',
           label: { TH: 'ที่อยู่ใหม่', EN: 'New Address', ZH: '新地址' },
-          placeholder: { TH: 'ที่อยู่ร้านใหม่ที่จะย้ายไป', EN: 'New shop address you are moving to', ZH: '搬迁后的新店铺地址' }
+          placeholder: { TH: 'พิมพ์ที่อยู่ หรือปักหมุดบนแผนที่ด้านล่าง', EN: 'Type an address or pin it on the map below', ZH: '请输入地址，或在下方地图上标记位置' }
         }
       ]
     };
@@ -1257,7 +1257,177 @@
         mapCoordsHint.classList.remove('picked');
       }
     }
+// =========================================================================
+    // ===== แผนที่ราย field สำหรับ "ที่อยู่เดิม/ที่อยู่ใหม่" (หัวข้อย้ายร้าน) =====
+    // แต่ละฟิลด์ addressMap มี: textarea ที่อยู่ + แผนที่ + ปุ่มใช้ตำแหน่งปัจจุบัน + hint พิกัด
+    // ปักหมุด/ลาก -> เติมที่อยู่อัตโนมัติ (reverse geocoding)
+    // พิมพ์ที่อยู่ -> ขยับหมุดให้อัตโนมัติ (forward geocoding, debounce)
+    // =========================================================================
+    let addressMapState = {};
 
+    function destroyAddressMap_(fieldId) {
+      const st = addressMapState[fieldId];
+      if (st && st.map) { try { st.map.remove(); } catch (e) {} }
+      delete addressMapState[fieldId];
+    }
+
+    function appendAddressMapBlock_(container, f, lang) {
+      const t = I18N[lang];
+      const mapWrap = document.createElement('div');
+      mapWrap.className = 'field map-field-wrap';
+      const mapContainer = document.createElement('div');
+      mapContainer.className = 'map-container';
+      mapContainer.id = f.id + '_mapContainer';
+      const toolbar = document.createElement('div');
+      toolbar.className = 'map-toolbar';
+      const locateBtn = document.createElement('button');
+      locateBtn.type = 'button';
+      locateBtn.className = 'map-locate-btn';
+      locateBtn.id = f.id + '_locateBtn';
+      locateBtn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#ff8a93" stroke-width="2" stroke-linecap="round"/>' +
+        '<circle cx="12" cy="12" r="5" stroke="#ff8a93" stroke-width="2"/></svg>' +
+        '<span>' + t.mapLocateBtn + '</span>';
+      const hint = document.createElement('span');
+      hint.className = 'map-coords-hint';
+      hint.id = f.id + '_hint';
+      hint.textContent = t.mapNotPicked;
+      toolbar.appendChild(locateBtn);
+      toolbar.appendChild(hint);
+      mapWrap.appendChild(mapContainer);
+      mapWrap.appendChild(toolbar);
+      container.appendChild(mapWrap);
+    }
+
+    function updateAddressMapHint_(fieldId) {
+      const hintEl = document.getElementById(fieldId + '_hint');
+      if (!hintEl) return;
+      const t = I18N[currentLang];
+      const st = addressMapState[fieldId];
+      if (st && st.picked && st.lat !== null) {
+        hintEl.textContent = t.mapPicked + ' (' + st.lat.toFixed(5) + ', ' + st.lng.toFixed(5) + ')';
+        hintEl.classList.add('picked');
+      } else {
+        hintEl.textContent = t.mapNotPicked;
+        hintEl.classList.remove('picked');
+      }
+    }
+
+    function scheduleReverseGeocodeFor_(fieldId, lat, lng) {
+      const st = addressMapState[fieldId];
+      if (!st || isApplyingDraft) return;
+      const myToken = ++st.geocodeToken;
+      const t = I18N[currentLang];
+      const hintEl = document.getElementById(fieldId + '_hint');
+      const langCode = currentLang === 'TH' ? 'th' : (currentLang === 'ZH' ? 'zh' : 'en');
+      if (hintEl) hintEl.textContent = t.mapAddressLoading;
+      const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng +
+        '&zoom=18&addressdetails=1&accept-language=' + langCode;
+      fetch(url, { headers: { 'Accept': 'application/json' } })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (myToken !== st.geocodeToken) return;
+          updateAddressMapHint_(fieldId);
+          const address = data && data.display_name;
+          const textEl = document.getElementById(fieldId);
+          if (address && textEl) {
+            st.suppressForwardGeocode = true;
+            textEl.value = address;
+            st.suppressForwardGeocode = false;
+            scheduleDraftSave();
+          }
+        })
+        .catch(function () { if (myToken === st.geocodeToken) updateAddressMapHint_(fieldId); });
+    }
+
+    function forwardGeocodeFor_(fieldId, query) {
+      const st = addressMapState[fieldId];
+      if (!st || st.suppressForwardGeocode) return;
+      const langCode = currentLang === 'TH' ? 'th' : (currentLang === 'ZH' ? 'zh' : 'en');
+      const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&q=' + encodeURIComponent(query) +
+        '&limit=1&accept-language=' + langCode;
+      fetch(url, { headers: { 'Accept': 'application/json' } })
+        .then(function (res) { return res.json(); })
+        .then(function (results) {
+          if (results && results.length > 0) {
+            const r = results[0];
+            const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+            if (!isNaN(lat) && !isNaN(lng)) st.setPicked(lat, lng, true, true);
+          }
+        })
+        .catch(function () {});
+    }
+
+    function initAddressMapField_(fieldId) {
+      destroyAddressMap_(fieldId);
+      const mapEl = document.getElementById(fieldId + '_mapContainer');
+      if (!mapEl) return;
+      const center = DEFAULT_MAP_CENTER;
+      const map = L.map(mapEl, { attributionControl: true }).setView(center, 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+      const marker = L.marker(center, { draggable: true }).addTo(map);
+
+      const state = { map: map, marker: marker, lat: null, lng: null, picked: false, geocodeToken: 0, searchTimer: null, suppressForwardGeocode: false };
+      addressMapState[fieldId] = state;
+
+      state.setPicked = function (lat, lng, recenter, skipReverse) {
+        state.lat = lat; state.lng = lng; state.picked = true;
+        marker.setLatLng([lat, lng]);
+        if (recenter) map.setView([lat, lng], 16);
+        updateAddressMapHint_(fieldId);
+        scheduleDraftSave();
+        if (!skipReverse) scheduleReverseGeocodeFor_(fieldId, lat, lng);
+      };
+
+      map.on('click', function (e) { state.setPicked(e.latlng.lat, e.latlng.lng, false); });
+      marker.on('dragend', function () { const p = marker.getLatLng(); state.setPicked(p.lat, p.lng, false); });
+
+      const locateBtn = document.getElementById(fieldId + '_locateBtn');
+      if (locateBtn) {
+        locateBtn.addEventListener('click', function () {
+          const t = I18N[currentLang];
+          if (!navigator.geolocation) { showAlert('error', t.mapLocateError); return; }
+          const textEl2 = locateBtn.querySelector('span');
+          const original = textEl2.textContent;
+          textEl2.textContent = t.mapLocating;
+          locateBtn.disabled = true;
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            state.setPicked(pos.coords.latitude, pos.coords.longitude, true);
+            textEl2.textContent = original;
+            locateBtn.disabled = false;
+          }, function () {
+            textEl2.textContent = original;
+            locateBtn.disabled = false;
+            showAlert('error', t.mapLocateError);
+          }, { enableHighAccuracy: true, timeout: 10000 });
+        });
+      }
+
+      const textEl = document.getElementById(fieldId);
+      if (textEl) {
+        textEl.addEventListener('input', function () {
+          clearTimeout(state.searchTimer);
+          const q = textEl.value.trim();
+          if (q.length < 5) return;
+          state.searchTimer = setTimeout(function () { forwardGeocodeFor_(fieldId, q); }, 900);
+        });
+      }
+
+      updateAddressMapHint_(fieldId);
+      setTimeout(function () { map.invalidateSize(); }, 250);
+    }
+
+    function updateSharedAddressVisibility_() {
+      const selected = getSelectedServiceTypes();
+      const hideShared = selected.indexOf('RESTAURANT_RELOCATION') > -1;
+      const aw = document.getElementById('sharedAddressWrap');
+      const mw = document.getElementById('sharedMapWrap');
+      if (aw) aw.style.display = hideShared ? 'none' : '';
+      if (mw) mw.style.display = hideShared ? 'none' : '';
+    }
     locationMap.on('click', function (e) {
       setPickedLocation(e.latlng.lat, e.latlng.lng, false);
     });
@@ -1355,17 +1525,24 @@
       const lang = currentLang;
       const selected = getSelectedServiceTypes();
 
-      // เก็บค่าที่กรอกไว้ก่อนเรนเดอร์ใหม่ (กันข้อมูลหายตอนสลับภาษา/ติ๊กเพิ่ม)
-      const savedValues = {};
+const savedValues = {};
       selected.forEach(function (svc) {
         (DYNAMIC_FIELDS[svc] || []).forEach(function (f) {
           const el = document.getElementById(f.id);
           if (el) savedValues[f.id] = el.value;
+          if (f.type === 'addressMap') {
+            const st = addressMapState[f.id];
+            if (st && st.picked) {
+              savedValues[f.id + '_lat'] = st.lat;
+              savedValues[f.id + '_lng'] = st.lng;
+            }
+          }
         });
       });
 
       extraDatePickers.forEach(function (p) { p.destroy(); });
       extraDatePickers = [];
+      Object.keys(addressMapState).forEach(function (id) { destroyAddressMap_(id); });
       container.innerHTML = '';
 
       selected.forEach(function (svc) {
@@ -1400,7 +1577,7 @@
               o.value = opt.value; o.textContent = opt.label[lang];
               inputEl.appendChild(o);
             });
-          } else if (f.type === 'textarea') {
+          } else if (f.type === 'textarea' || f.type === 'addressMap') {
             inputEl = document.createElement('textarea');
             inputEl.id = f.id;
             if (f.placeholder) inputEl.placeholder = f.placeholder[lang];
@@ -1426,8 +1603,20 @@
             extraDatePickers.push(picker);
             if (savedValues[f.id]) picker.setDate(savedValues[f.id], true);
           }
+
+          if (f.type === 'addressMap') {
+            appendAddressMapBlock_(container, f, lang);
+            initAddressMapField_(f.id);
+            const savedLat = savedValues[f.id + '_lat'];
+            const savedLng = savedValues[f.id + '_lng'];
+            if (savedLat !== undefined && savedLng !== undefined) {
+              addressMapState[f.id].setPicked(savedLat, savedLng, true, true);
+            }
+          }
         });
       });
+
+      updateSharedAddressVisibility_();
     }
 
     // ===== ประเภทบริการที่ไม่รองรับตัวเลือก "ส่งเครื่องอุปกรณ์ไปยังศูนย์บริการ" (ต้องมีช่างไปหน้างานจริง) =====
@@ -2031,6 +2220,11 @@
       extraFields.forEach(function (f) {
         const el = document.getElementById(f.id);
         if (el) data[f.id] = (el.value || '').trim();
+        if (f.type === 'addressMap') {
+          const st = addressMapState[f.id];
+          data[f.id + 'Lat'] = (st && st.picked && st.lat !== null) ? Number(st.lat).toFixed(6) : '';
+          data[f.id + 'Lng'] = (st && st.picked && st.lng !== null) ? Number(st.lng).toFixed(6) : '';
+        }
       });
 
       const fulfillment = document.getElementById('fulfillmentType').value;
@@ -2456,16 +2650,10 @@
         fulfillmentType: document.getElementById('lblFulfillment').textContent
       };
       if (formData.serviceTypes.length === 0) missingLabels.push(lblOf.serviceTypes);
-if (!formData.contactName) missingLabels.push(lblOf.contactName);
-if (!formData.phone) missingLabels.push(lblOf.phone);
-if (!formData.bookingDate) missingLabels.push(lblOf.bookingDate);
-if (!formData.fulfillmentType) missingLabels.push(lblOf.fulfillmentType);
-
-// ===== เมื่อเลือก "ส่งช่างไปตามจังหวัด" ต้องมีอย่างน้อยหนึ่งอย่าง: ที่อยู่ของร้าน หรือ ปักหมุดตำแหน่งสำเร็จ =====
-// กันเคส auto-fill ที่อยู่จากแผนที่ล้มเหลว (Nominatim หา address ไม่เจอ/rate limit) แล้วปล่อยผ่านแบบไม่มีที่อยู่เลย
-if (formData.fulfillmentType === 'PROVINCE_ONSITE' && !formData.shopAddress && !(formData.mapLat && formData.mapLng)) {
-  missingLabels.push(document.getElementById('lblShopAddress').textContent);
-}
+      if (!formData.contactName) missingLabels.push(lblOf.contactName);
+      if (!formData.phone) missingLabels.push(lblOf.phone);
+      if (!formData.bookingDate) missingLabels.push(lblOf.bookingDate);
+      if (!formData.fulfillmentType) missingLabels.push(lblOf.fulfillmentType);
 
       if (missingLabels.length > 0) {
         // แสดงชื่อฟิลด์ที่ขาดจริงๆ ต่อท้ายข้อความเดิม เพื่อให้เห็นสาเหตุตรงจุด
@@ -2565,11 +2753,17 @@ if (formData.fulfillmentType === 'PROVINCE_ONSITE' && !formData.shopAddress && !
         (data.serviceTypes || []).forEach(function (svc) {
           (DYNAMIC_FIELDS[svc] || []).forEach(function (f) {
             const val = data[f.id];
-            if (!val) return;
             const inputEl = document.getElementById(f.id);
-            if (!inputEl) return;
-            if (f.type === 'date' && inputEl._flatpickr) inputEl._flatpickr.setDate(val, true);
-            else inputEl.value = val;
+            if (val && inputEl) {
+              if (f.type === 'date' && inputEl._flatpickr) inputEl._flatpickr.setDate(val, true);
+              else inputEl.value = val;
+            }
+            if (f.type === 'addressMap') {
+              const lat = parseFloat(data[f.id + 'Lat']);
+              const lng = parseFloat(data[f.id + 'Lng']);
+              const st = addressMapState[f.id];
+              if (st && !isNaN(lat) && !isNaN(lng)) st.setPicked(lat, lng, true, true);
+            }
           });
         });
 
